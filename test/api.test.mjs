@@ -14,20 +14,20 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.match(sketch.members.find(member => member.name === "fromFace").signature, /static fromFace/);
   const extrude = api.entries.find(entry => entry.name === "extrude");
   assert.ok(extrude.tags.some(tag => tag.name === "throws" && tag.text.includes("RangeError")));
-  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.circleSegments")));
+  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.direction")));
   assert.ok(!api.entries.some(entry => entry.name === "triangulatePolygon"));
   assert.ok(!api.entries.find(entry => entry.name === "Memo").members.some(member => member.name === "triangulateUncached"));
   const node = api.entries.find(entry => entry.name === "Node");
   assert.match(node.members.find(member => member.name === "add").signature, /add\(\.\.\.children: Node\[\]\): this/);
   assert.match(node.members.find(member => member.name === "remove").description, /object identity/);
   assert.match(api.entries.find(entry => entry.name === "Solid").signature, /extends Memo/);
-  for (const name of ["Point", "Vertex"]) {
+  for (const name of ["Point", "Vertex", "SpatialBoundary"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Interface");
     assert.equal(entry.signature, `interface ${name}`);
     assert.ok(entry.members.every(member => member.name !== "constructor"));
   }
-  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid"]) {
+  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "spatialCurve", "spatialSurface"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Function");
     assert.match(entry.description, /shorthand for/);
@@ -46,6 +46,11 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   const plane = api.entries.find(entry => entry.name === "plane");
   assert.match(plane.signature, /options\?/);
   assert.match(plane.members.find(member => member.name === "options.a").description, /defaults to \[0, 0, 0\]/);
+  const spatialCurve = api.entries.find(entry => entry.name === "SpatialCurve");
+  assert.ok(spatialCurve.members.some(member => member.name === "isLoop"));
+  assert.match(api.entries.find(entry => entry.name === "SpatialSurface").description, /exact ruled surface/);
+  assert.match(api.entries.find(entry => entry.name === "Face").signature, /extends Surface/);
+  assert.doesNotMatch(extrude.signature, /circleSegments/);
 });
 
 test("editor globals resolve libcompass and gl-matrix types and documentation", () => {
@@ -57,7 +62,7 @@ const s = new Sketch({ plane: new Plane({ a: vertex }) });
 s.add(new Circle({ center, radius: 5 }));
 const solid = extrude({ sketch: s, direction: [0, 0, 10] });
 scene.add(solid);
-s.extrude({ circleSegments: 12, direction: [0, 0, 2] });
+s.extrude({ direction: [0, 0, 2] });
 const draft = sketch({ plane: plane() }).add(circle({ center, radius: 2 }));
 scene.add(draft.extrude({ direction: [0, 0, 3] }));
 scene.add(node(), memo(), transformMat4Node({ matrix: mat4.create() }));
@@ -68,7 +73,18 @@ solid.refresh();
 scene.remove(new Node(), new Node());
 const vector = vec3.fromValues(1, 2, 3);
 const matrix = mat4.create();
-const SketchClass = Sketch;`;
+const SketchClass = Sketch;
+const rim = SpatialCurve.fromCircle({ circle: circle({ center, radius: 1 }) });
+const topRim = SpatialCurve.fromCircle({ circle: circle({ center, radius: 1 }), plane: plane({ a: [0, 0, 3], b: [1, 0, 3], c: [0, 1, 3] }) });
+const wall = spatialSurface({ start: rim, end: topRim });
+const sampled = rim.sample();
+const pointOnSurface = wall.at(0.25, 0.5);
+const loop = rim.isLoop();
+const precision = TRIANGULATION_RESOLUTION;
+/** @type {SpatialBoundary} */
+const boundary = rim;
+const surfaces = solid.surfaces;
+const boundaries = solid.boundaries;`;
   const files = new Map(Object.entries(api.libraries).map(([path, content]) => [path.replace("file://", ""), content]));
   files.set("/model.js", code);
   const readFile = path => files.get(path) ?? ts.sys.readFile(path);

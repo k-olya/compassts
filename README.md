@@ -55,6 +55,15 @@ remains the array utility. `Point` and `Vertex` are interfaces: use
 `{ x, y }` and `{ position: [x, y, z] }` literals. Their types and documentation
 are available to Monaco, including through JavaScript JSDoc annotations.
 
+Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`
+(`Face` or `SpatialSurface`) and shared `boundaries` (`Edge` or `SpatialCurve`).
+Only rendering and STL export use triangles. The library-wide
+`TRIANGULATION_RESOLUTION` is `0.001` model units of chord deviation; circle
+segment counts are derived automatically from radius. `extrude` no longer takes
+`circleSegments`. Curve `at(t)` uses [0, 1], while `Circle.at(angle)` uses radians.
+`SpatialCurve`, `SpatialSurface`, their shorthands, and `SpatialBoundary` types
+are included in the editor and documentation browser.
+
 Solids are memoized scene graph nodes and can be added directly to scenes,
 `Transform`, and `TransformMat4` nodes. Call `refresh()` on affected memoized
 nodes and cached ancestors after changing their children.
