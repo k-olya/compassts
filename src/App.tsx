@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { FiArrowUp, FiBookOpen, FiBox, FiCircle, FiLayers, FiMaximize, FiMinimize, FiMinus, FiMove, FiRotateCw, FiSquare } from "react-icons/fi";
 import Docs from "./Docs.tsx";
+import Console from "./Console.tsx";
 import Editor from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
+import type { ScriptLocation } from "./script-console.ts";
 
 const toolSections = {
   "3d": [
@@ -22,6 +24,7 @@ const toolSections = {
 export default function App() {
   const [toolMode, setToolMode] = useState<"3d" | "2d">("3d");
   const [viewExpanded, setViewExpanded] = useState(false);
+  const [editorLocation, setEditorLocation] = useState<ScriptLocation | null>(null);
   const [orthographic, setOrthographic] = useState(false);
   const [docsOpen, setDocsOpen] = useState(false);
   const { code, rendered, error, render, exportStl } = useCadStore();
@@ -68,7 +71,7 @@ export default function App() {
         <div className={`panes${viewExpanded ? " panes-expanded" : ""}`}>
           <section id="code-pane" className="pane editor-pane" aria-label="Code editor" hidden={viewExpanded}>
             <div className="pane-header"><span><span className="js-label">JS</span> model.js</span><span className="pane-note">Ctrl / ⌘ + Enter</span></div>
-            <Editor />
+            <Editor location={editorLocation} />
           </section>
           <section className="pane viewer-pane" aria-label="3D model preview" hidden={docsOpen}>
             <div className="pane-header">
@@ -92,7 +95,7 @@ export default function App() {
           </ToolbarSection>
         </SideToolbar>
       </div>
-      {error && <div className="error-message" role="alert">{error}</div>}
+      <Console onNavigate={location => { setViewExpanded(false); setEditorLocation({ ...location }); }} />
       <footer className="statusbar" aria-live="polite">
         <span>{error ? "Render failed · Previous model retained" : changed ? "Changes not rendered" : "Rendered"}</span>
         <span>{triangles.toLocaleString()} triangles</span>

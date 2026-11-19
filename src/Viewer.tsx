@@ -15,9 +15,24 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true });
     } catch (error) {
+      useCadStore.getState().reportRendererError(error);
       setError(error instanceof Error ? error.message : "WebGL is unavailable.");
       return;
     }
+    let failed = false;
+    const reportError = (error: unknown) => {
+      if (failed) return;
+      failed = true;
+      renderer.setAnimationLoop(null);
+      useCadStore.getState().reportRendererError(error);
+      setError(error instanceof Error ? error.message || error.name : String(error));
+    };
+    const guard = (action: () => void) => {
+      if (failed) return;
+      try { action(); } catch (error) { reportError(error); }
+    };
+    const contextLost = () => reportError(new Error("WebGL context lost. Reload to restore the 3D preview."));
+    renderer.domElement.addEventListener("webglcontextlost", contextLost);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     host.appendChild(renderer.domElement);
 
@@ -102,7 +117,7 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       parallel.bottom = -halfHeight;
       parallel.updateProjectionMatrix();
     };
-    setProjection.current = (orthographic) => {
+    setProjection.current = (orthographic) => guard(() => {
       const next = orthographic ? parallel : perspective;
       if (next === camera) return;
       const halfFov = THREE.MathUtils.degToRad(perspective.fov / 2);
@@ -123,7 +138,7 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       controls.object = camera;
       updateProjection();
       controls.update();
-    };
+    });
 
     scene.add(new THREE.HemisphereLight(0xdbeaff, 0x626058, 2));
     const light = new THREE.DirectionalLight(0xfff1d8, 3);
@@ -140,10 +155,14 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
     scene.add(mesh, lines);
 
     const update = (rendered: RenderedScene) => {
+      const geometry = createGeometry(rendered.positions);
+      let edges: THREE.EdgesGeometry;
+      try { edges = new THREE.EdgesGeometry(geometry, 30); }
+      catch (error) { geometry.dispose(); throw error; }
       mesh.geometry.dispose();
       lines.geometry.dispose();
-      mesh.geometry = createGeometry(rendered.positions);
-      lines.geometry = new THREE.EdgesGeometry(mesh.geometry, 30);
+      mesh.geometry = geometry;
+      lines.geometry = edges;
       if (!rendered.positions.length) return;
       mesh.geometry.computeBoundingSphere();
       mesh.geometry.computeBoundingBox();
@@ -163,22 +182,28 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       grid.scale.setScalar(size * 4 / 200);
     };
 
-    const resize = () => {
+    const resize = () => guard(() => {
       const { width, height } = host.getBoundingClientRect();
       renderer.setSize(Math.max(width, 1), Math.max(height, 1));
       perspective.aspect = Math.max(width, 1) / Math.max(height, 1);
       updateProjection();
+    });
+    const renderFrame = () => guard(() => {
+      controls.update();
+      renderer.render(scene, camera);
+    });
+    const updatePreview = (rendered: RenderedScene) => {
+      failed = false;
+      setError(null);
+      guard(() => update(rendered));
+      if (!failed) renderer.setAnimationLoop(renderFrame);
     };
     resize();
-    update(useCadStore.getState().rendered);
+    if (!failed) updatePreview(useCadStore.getState().rendered);
     const observer = new ResizeObserver(resize);
     observer.observe(host);
     const unsubscribe = useCadStore.subscribe((state, previous) => {
-      if (state.rendered !== previous.rendered) update(state.rendered);
-    });
-    renderer.setAnimationLoop(() => {
-      controls.update();
-      renderer.render(scene, camera);
+      if (state.rendered !== previous.rendered) updatePreview(state.rendered);
     });
 
     return () => {
@@ -186,6 +211,7 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       unsubscribe();
       observer.disconnect();
       renderer.setAnimationLoop(null);
+      renderer.domElement.removeEventListener("webglcontextlost", contextLost);
       renderer.domElement.removeEventListener("mousemove", movePointer);
       renderer.domElement.removeEventListener("mouseleave", resetPointer);
       renderer.domElement.removeEventListener("mousedown", resetPointer);

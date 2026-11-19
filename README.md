@@ -72,8 +72,26 @@ removal takes child objects, not indices.
 Removal deletes all occurrences of the supplied objects and ignores absent ones.
 
 Render (or Ctrl/Cmd+Enter in the editor) evaluates the source and replaces the
-preview. Syntax, runtime, and invalid triangle data errors appear below the two
-panes and leave the previous model intact. Export STL downloads `compass.stl`
+preview. Syntax, runtime, and invalid triangle data errors appear in the
+scrollable console below the panes and leave the previous model intact.
+Errors include editor line/column locations and user-script stack frames when
+available. Click a console location or a script stack frame to reveal and focus
+that position in the editor, restoring the code pane if it was hidden.
+Evaluation failures also appear as Monaco error squiggles with the error and
+stack in their hover tooltip. These markers clear on edit or the next Render;
+ordinary `console.error()` output does not create editor diagnostics.
+The console also captures script `console.*` output (including objects,
+warnings, assertions, traces, counters, and timers), while forwarding it to the
+browser console. Output starts fresh on Render with no entry limit. The console
+opens when there is output and stays closed after a run with no output. Its X
+button closes it without clearing the current run's entries or editor markers;
+new output opens it again. `console.clear()` clears and closes it. Delayed output from a
+superseded run is ignored. Preview renderer errors use the same console, labeled
+Renderer, with their internal stack if no script frame is available. A failed
+preview animation stops to avoid repeating the error on every frame; another
+Render retries the preview.
+
+Export STL downloads `compass.stl`
 using Three's binary STL exporter, with exactly the last successful preview's
 geometry. Edits take effect after Render.
 

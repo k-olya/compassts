@@ -3,6 +3,8 @@ import { glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 } from
 import { Node } from "libcompass";
 import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } from "three";
 import { STLExporter } from "three/addons/exporters/STLExporter.js";
+import { parse } from "acorn";
+import { createScriptConsole, errorEntry, type ConsoleOutput, type ScriptLocation } from "./script-console.ts";
 
 export const DEFAULT_CODE = `// libcompass constructors, shorthands, and gl-matrix are available by name.
 // Add nodes to scene, then press Render (Ctrl/Cmd + Enter).
@@ -40,17 +42,38 @@ export interface RenderedScene {
 
 const bindings = { ...compass, glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
 
-export function evaluateCode(source: string): RenderedScene {
+export function evaluateCode(source: string, output?: ConsoleOutput): RenderedScene {
   // ponytail: synchronous, trusted local code; a worker is needed for execution time limits.
   // Block scope lets local names shadow library bindings such as sketch and circle.
-  const evaluate = new Function("scene", ...Object.keys(bindings), `"use strict";\n{\n${source}\n;return scene;\n}`);
-  const scene: unknown = evaluate(new Node(), ...Object.values(bindings));
-  if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
-  const positions = scene.triangulate();
-  if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
-    throw new TypeError("scene.triangulate() must return finite XYZ triangle positions in a Float32Array.");
+  const body = `"use strict";\n{\n${source}\n;return scene;\n}\n//# sourceURL=compass-script.js`;
+  let syntaxLocation: ScriptLocation | undefined;
+  try {
+    let evaluate: (...args: unknown[]) => unknown;
+    try {
+      evaluate = new Function("scene", "console", ...Object.keys(bindings), body) as typeof evaluate;
+    } catch (error) {
+      // Browsers omit source locations for Function compilation errors.
+      try {
+        parse(body, { ecmaVersion: "latest", allowReturnOutsideFunction: true });
+      } catch (diagnostic) {
+        if (diagnostic instanceof SyntaxError && "loc" in diagnostic) {
+          const loc = diagnostic.loc as { line: number; column: number };
+          syntaxLocation = { line: Math.min(source.split("\n").length, Math.max(1, loc.line - 2)), column: loc.column + 1 };
+        }
+      }
+      throw error;
+    }
+    const scene = evaluate(new Node(), output ? createScriptConsole(output) : console, ...Object.values(bindings));
+    if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
+    const positions = scene.triangulate();
+    if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
+      throw new TypeError("scene.triangulate() must return finite XYZ triangle positions in a Float32Array.");
+    }
+    return { scene, positions: positions.slice(), source };
+  } catch (error) {
+    output?.(errorEntry(error, syntaxLocation));
+    throw error;
   }
-  return { scene, positions: positions.slice(), source };
 }
 
 export function createGeometry(positions: Float32Array): BufferGeometry {
