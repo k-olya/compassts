@@ -12,6 +12,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.ok(sketch.members.some(member => member.name === "constructor" && member.tags.some(tag => tag.name === "param" && tag.text.startsWith("options"))));
   assert.match(sketch.members.find(member => member.name === "add").description, /Append entities/);
   assert.match(sketch.members.find(member => member.name === "fromFace").signature, /static fromFace/);
+  assert.match(sketch.members.find(member => member.name === "fromFace").description, /empty sketch/);
   const extrude = api.entries.find(entry => entry.name === "extrude");
   assert.ok(extrude.tags.some(tag => tag.name === "throws" && tag.text.includes("RangeError")));
   assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.direction")));
@@ -48,8 +49,10 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.match(plane.members.find(member => member.name === "options.a").description, /defaults to \[0, 0, 0\]/);
   const spatialCurve = api.entries.find(entry => entry.name === "SpatialCurve");
   assert.ok(spatialCurve.members.some(member => member.name === "isLoop"));
-  assert.match(spatialCurve.members.find(member => member.name === "fromPlanarCurve").signature, /curve: PlanarCurve/);
+  assert.match(spatialCurve.members.find(member => member.name === "fromPlanarCurve").signature, /curve: Pick<PlanarCurve/);
   assert.ok(!spatialCurve.members.some(member => member.name === "fromCircle"));
+  assert.ok(!spatialCurve.members.some(member => member.name === "circle"));
+  assert.ok(spatialCurve.members.some(member => member.name === "sampleParameters"));
   assert.match(api.entries.find(entry => entry.name === "Circle").signature, /extends PlanarCurve/);
   assert.match(api.entries.find(entry => entry.name === "PlanarCurve").members.find(member => member.name === "at").tags.find(tag => tag.name === "param").text, /\[0, 1\]/);
   assert.match(api.entries.find(entry => entry.name === "SpatialSurface").description, /exact ruled surface/);
@@ -88,6 +91,8 @@ sketch().add(sketchElement);
 /** @type {PlanarCurve} */
 const planar = localCurve;
 const lifted = SpatialCurve.fromPlanarCurve({ curve: planar });
+const liftedFunction = SpatialCurve.fromPlanarCurve({ curve: { at: t => ({ x: t, y: t * t }) } });
+const parameters = liftedFunction.sampleParameters({ resolution: 0.001 });
 const wall = spatialSurface({ start: rim, end: topRim });
 const sampled = rim.sample();
 const pointOnSurface = wall.at(0.25, 0.5);

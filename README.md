@@ -67,6 +67,11 @@ plane })` lifts any planar curve into world space without sampling, replacing
 `fromCircle`. `PlanarCurve`, `SpatialCurve`, `SpatialSurface`, their shorthands, and `SpatialBoundary` types
 are included in the editor and documentation browser.
 
+Curve lifting also accepts plain `at(t)` evaluators. Subdivision is delegated
+through `sampleParameters({ resolution })`; `Circle` owns its radius-based rule,
+while generic curves use adaptive evaluation. `Sketch.fromFace(face)` creates an
+empty sketch on that face's plane, without copying its boundary geometry.
+
 Solids are memoized scene graph nodes and can be added directly to scenes,
 `Transform`, and `TransformMat4` nodes. Call `refresh()` on affected memoized
 nodes and cached ancestors after changing their children.
