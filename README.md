@@ -37,15 +37,23 @@ After changing libcompass source, rebuild it with
 documentation and editor declarations.
 
 The editor runs synchronous JavaScript. All libcompass exports (`Node`, `Memo`,
-`Sketch`, `Point`, `Circle`, `extrude`, etc.), gl-matrix exports (`mat4`, `vec3`,
+`Sketch`, `Circle`, `sketch`, `circle`, `extrude`, etc.), gl-matrix exports (`mat4`, `vec3`,
 etc.) are available by name without imports. `scene` is a fresh
 libcompass `Node` in each evaluation's global scope. Add child nodes with `add`:
 
 ```js
-const sketch = new Sketch().add(new Circle(new Point(0, 0), 20));
-const solid = extrude(sketch, [0, 0, 10]);
-scene.add(solid);
+const s = sketch().add(circle({ center: { x: 0, y: 0 }, radius: 20 }));
+const part = extrude({ sketch: s, direction: [0, 0, 10] });
+scene.add(part);
 ```
+
+Constructors take named options objects, such as `new Circle({ center, radius })`
+and `new TransformMat4({ matrix })`. Their lowercase shorthands use the same
+options, for example `circle({ center, radius })` and `sketch()`. Use
+`transformMat4Node({ matrix })` for the matrix-node shorthand; `transformMat4`
+remains the array utility. `Point` and `Vertex` are interfaces: use
+`{ x, y }` and `{ position: [x, y, z] }` literals. Their types and documentation
+are available to Monaco, including through JavaScript JSDoc annotations.
 
 Solids are memoized scene graph nodes and can be added directly to scenes,
 `Transform`, and `TransformMat4` nodes. Call `refresh()` on affected memoized

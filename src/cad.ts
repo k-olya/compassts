@@ -4,7 +4,7 @@ import { Node } from "libcompass";
 import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } from "three";
 import { STLExporter } from "three/addons/exporters/STLExporter.js";
 
-export const DEFAULT_CODE = `// libcompass classes and gl-matrix are available by name.
+export const DEFAULT_CODE = `// libcompass constructors, shorthands, and gl-matrix are available by name.
 // Add nodes to scene, then press Render (Ctrl/Cmd + Enter).
 
 const width = 100;
@@ -12,22 +12,22 @@ const depth = 64;
 const height = 12;
 
 const corners = [
-  new Point(-width / 2, -depth / 2),
-  new Point( width / 2, -depth / 2),
-  new Point( width / 2,  depth / 2),
-  new Point(-width / 2,  depth / 2),
+  { x: -width / 2, y: -depth / 2 },
+  { x: width / 2, y: -depth / 2 },
+  { x: width / 2, y: depth / 2 },
+  { x: -width / 2, y: depth / 2 },
 ];
 
-const sketch = new Sketch();
-sketch.add(...corners.map((point, i) =>
-  new LineSegment(point, corners[(i + 1) % corners.length])
+const s = sketch();
+s.add(...corners.map((point, i) =>
+  lineSegment({ start: point, end: corners[(i + 1) % corners.length] })
 ));
-sketch.add(
-  new Circle(new Point(-28, 0), 10),
-  new Circle(new Point( 28, 0), 10),
+s.add(
+  circle({ center: { x: -28, y: 0 }, radius: 10 }),
+  circle({ center: { x: 28, y: 0 }, radius: 10 }),
 );
 
-const part = extrude(sketch, [0, 0, height], 48);
+const part = extrude({ sketch: s, direction: [0, 0, height], circleSegments: 48 });
 scene.add(part);
 `;
 
@@ -41,7 +41,8 @@ const bindings = { ...compass, glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, v
 
 export function evaluateCode(source: string): RenderedScene {
   // ponytail: synchronous, trusted local code; a worker is needed for execution time limits.
-  const evaluate = new Function("scene", ...Object.keys(bindings), `"use strict";\n${source}\n;return scene;`);
+  // Block scope lets local names shadow library bindings such as sketch and circle.
+  const evaluate = new Function("scene", ...Object.keys(bindings), `"use strict";\n{\n${source}\n;return scene;\n}`);
   const scene: unknown = evaluate(new Node(), ...Object.values(bindings));
   if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
   const positions = scene.triangulate();

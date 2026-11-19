@@ -9,25 +9,59 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   const sketch = api.entries.find(entry => entry.name === "Sketch");
   assert.match(sketch.description, /Local 2D drawing geometry/);
   assert.ok(sketch.tags.some(tag => tag.name === "example" && tag.text.includes("new Sketch()")));
-  assert.ok(sketch.members.some(member => member.name === "constructor" && member.tags.some(tag => tag.name === "param" && tag.text.startsWith("plane"))));
+  assert.ok(sketch.members.some(member => member.name === "constructor" && member.tags.some(tag => tag.name === "param" && tag.text.startsWith("options"))));
   assert.match(sketch.members.find(member => member.name === "add").description, /Append entities/);
   assert.match(sketch.members.find(member => member.name === "fromFace").signature, /static fromFace/);
   const extrude = api.entries.find(entry => entry.name === "extrude");
   assert.ok(extrude.tags.some(tag => tag.name === "throws" && tag.text.includes("RangeError")));
-  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("circleSegments")));
+  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.circleSegments")));
   assert.ok(!api.entries.some(entry => entry.name === "triangulatePolygon"));
   assert.ok(!api.entries.find(entry => entry.name === "Memo").members.some(member => member.name === "triangulateUncached"));
   const node = api.entries.find(entry => entry.name === "Node");
   assert.match(node.members.find(member => member.name === "add").signature, /add\(\.\.\.children: Node\[\]\): this/);
   assert.match(node.members.find(member => member.name === "remove").description, /object identity/);
   assert.match(api.entries.find(entry => entry.name === "Solid").signature, /extends Memo/);
+  for (const name of ["Point", "Vertex"]) {
+    const entry = api.entries.find(entry => entry.name === name);
+    assert.equal(entry.kind, "Interface");
+    assert.equal(entry.signature, `interface ${name}`);
+    assert.ok(entry.members.every(member => member.name !== "constructor"));
+  }
+  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid"]) {
+    const entry = api.entries.find(entry => entry.name === name);
+    assert.equal(entry.kind, "Function");
+    assert.match(entry.description, /shorthand for/);
+    const className = name === "transformMat4Node" ? "TransformMat4" : name[0].toUpperCase() + name.slice(1);
+    const classEntry = api.entries.find(entry => entry.name === className);
+    const constructor = classEntry.members.find(member => member.name === "constructor") ?? classEntry;
+    assert.ok(entry.description.includes(constructor.description));
+    assert.deepEqual(entry.tags, constructor.tags);
+    assert.doesNotMatch(entry.signature, /ConstructorParameters/);
+    assert.ok(entry.members.every(member => member.name.startsWith("options.") && member.description));
+  }
+  const circle = api.entries.find(entry => entry.name === "circle");
+  assert.match(circle.signature, /center: Point/);
+  assert.match(circle.signature, /radius: number/);
+  assert.match(circle.members.find(member => member.name === "options.radius").description, /Positive radius/);
+  const plane = api.entries.find(entry => entry.name === "plane");
+  assert.match(plane.signature, /options\?/);
+  assert.match(plane.members.find(member => member.name === "options.a").description, /defaults to \[0, 0, 0\]/);
 });
 
 test("editor globals resolve libcompass and gl-matrix types and documentation", () => {
-  const code = `const sketch = new Sketch();
-sketch.add(new Circle(new Point(0, 0), 5));
-const solid = extrude(sketch, [0, 0, 10]);
+  const code = `/** @type {Point} */
+const center = { x: 0, y: 0 };
+/** @type {Vertex} */
+const vertex = { position: [0, 0, 0] };
+const s = new Sketch({ plane: new Plane({ a: vertex }) });
+s.add(new Circle({ center, radius: 5 }));
+const solid = extrude({ sketch: s, direction: [0, 0, 10] });
 scene.add(solid);
+s.extrude({ circleSegments: 12, direction: [0, 0, 2] });
+const draft = sketch({ plane: plane() }).add(circle({ center, radius: 2 }));
+scene.add(draft.extrude({ direction: [0, 0, 3] }));
+scene.add(node(), memo(), transformMat4Node({ matrix: mat4.create() }));
+sketch().add({ x: 1, y: 2 });
 const transform = new Transform().add(solid);
 scene.add(transform);
 solid.refresh();
@@ -64,6 +98,25 @@ const SketchClass = Sketch;`;
     const remove = service.getQuickInfoAtPosition("/model.js", code.indexOf(".remove") + 2);
     assert.match(ts.displayPartsToString(remove.displayParts), /\.remove\(\.\.\.children: Node\[\]\)/);
     assert.match(ts.displayPartsToString(remove.documentation), /object identity/);
+    const point = service.getQuickInfoAtPosition("/model.js", code.indexOf("Point") + 1);
+    assert.match(ts.displayPartsToString(point.displayParts), /Point/);
+    assert.match(ts.displayPartsToString(point.documentation), /local XY coordinates/);
+    const shorthand = service.getQuickInfoAtPosition("/model.js", code.indexOf("sketch({") + 1);
+    assert.match(ts.displayPartsToString(shorthand.documentation), /shorthand for/);
+    assert.match(ts.displayPartsToString(shorthand.documentation), /Create an empty sketch/);
+    assert.match(ts.displayPartsToString(shorthand.displayParts), /Sketch/);
+    const circle = service.getQuickInfoAtPosition("/model.js", code.indexOf("circle({") + 1);
+    assert.match(ts.displayPartsToString(circle.documentation), /Create a circle with a positive radius/);
+    assert.match(ts.displayPartsToString(circle.displayParts), /center: Point/);
+    assert.match(ts.displayPartsToString(circle.displayParts), /radius: number/);
+    assert.ok(circle.tags.some(tag => tag.name === "throws"));
+    const radius = service.getQuickInfoAtPosition("/model.js", code.indexOf("radius: 2") + 1);
+    assert.match(ts.displayPartsToString(radius.documentation), /Positive radius/);
+    const completionCode = "circle({ ";
+    files.set("/completion.js", completionCode);
+    const completions = service.getCompletionsAtPosition("/completion.js", completionCode.length, {});
+    assert.ok(completions.entries.some(entry => entry.name === "center"));
+    assert.ok(completions.entries.some(entry => entry.name === "radius"));
   } finally {
     service.dispose();
   }

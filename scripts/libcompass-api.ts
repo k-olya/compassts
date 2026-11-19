@@ -58,18 +58,24 @@ export function readLibcompassApi() {
       if (!(ts.isClassDeclaration(node) || ts.isFunctionDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))
         || !node.name || !exports.includes(node.name.text)) return [];
       const signatureNode = ts.isClassDeclaration(node)
-        ? ts.factory.updateClassDeclaration(node, node.modifiers, node.name, node.typeParameters, node.heritageClauses, []) : node;
+        ? ts.factory.updateClassDeclaration(node, node.modifiers, node.name, node.typeParameters, node.heritageClauses, [])
+        : ts.isInterfaceDeclaration(node) ? ts.factory.updateInterfaceDeclaration(node, node.modifiers, node.name, node.typeParameters, node.heritageClauses, []) : node;
       const signature = printer.printNode(ts.EmitHint.Unspecified, signatureNode, source)
         .replace(/^export (?:declare )?/, "").replace(/\s*\{\s*\}$/, "");
-      const members = ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node) ? node.members.flatMap(member => {
+      const documentedMembers = ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)
+        ? node.members.map(member => ({ member, prefix: "" }))
+        : ts.isFunctionDeclaration(node) ? node.parameters.flatMap(parameter =>
+          parameter.type && ts.isTypeLiteralNode(parameter.type)
+            ? parameter.type.members.map(member => ({ member, prefix: `${parameter.name.getText(source)}.` })) : []) : [];
+      const members = documentedMembers.flatMap(({ member, prefix }) => {
         if (ts.getCombinedModifierFlags(member) & (ts.ModifierFlags.Private | ts.ModifierFlags.Protected)) return [];
         return [{
-          name: ts.isConstructorDeclaration(member) ? "constructor" : member.name?.getText(source) ?? "",
+          name: ts.isConstructorDeclaration(member) ? "constructor" : prefix + (member.name?.getText(source) ?? ""),
           signature: printer.printNode(ts.EmitHint.Unspecified, member, source),
           ...documentation(member),
         }];
-      }) : [];
-      return [{ name: node.name.text, kind: ts.isClassDeclaration(node) ? "Class" : ts.isFunctionDeclaration(node) ? "Function" : "Type", signature, ...documentation(node), members }];
+      });
+      return [{ name: node.name.text, kind: ts.isClassDeclaration(node) ? "Class" : ts.isInterfaceDeclaration(node) ? "Interface" : ts.isFunctionDeclaration(node) ? "Function" : "Type", signature, ...documentation(node), members }];
     });
   }).sort((a, b) => a.name.localeCompare(b.name));
   for (const path of Object.keys(libraries)) {

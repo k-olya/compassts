@@ -16,17 +16,17 @@ test("the example evaluates into a Node scene using real libcompass geometry", (
 });
 
 test("render scopes isolate repeated declarations and expose gl-matrix", () => {
-  const source = "const m = mat4.create(); scene.add(new TransformMat4(m));";
+  const source = "const m = mat4.create(); scene.add(new TransformMat4({ matrix: m }));";
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
 });
 
 test("editor scripts can add and remove multiple child objects", () => {
   const source = `
-    const sketch = new Sketch().add(new Circle(new Point(0, 0), 5));
-    const first = extrude(sketch, [0, 0, 10], 12);
-    const second = extrude(sketch, [0, 0, 20], 12);
-    const third = extrude(sketch, [0, 0, 30], 12);
+    const sketch = new Sketch().add(new Circle({ center: { x: 0, y: 0 }, radius: 5 }));
+    const first = extrude({ sketch, direction: [0, 0, 10], circleSegments: 12 });
+    const second = extrude({ sketch, direction: [0, 0, 20], circleSegments: 12 });
+    const third = extrude({ sketch, direction: [0, 0, 30], circleSegments: 12 });
     scene.add(first, second, third).remove(first, third);
   `;
   const result = evaluateCode(source);
