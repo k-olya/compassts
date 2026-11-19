@@ -34,7 +34,7 @@ test("editor scripts can add and remove multiple child objects", () => {
   `;
   const result = evaluateCode(source);
   assert.equal(result.scene.children.length, 1);
-  assert.equal(result.positions.length / 9, 4 * new Circle({ center: { x: 0, y: 0 }, radius: 5 }).sample().length - 4);
+  assert.equal(result.positions.length / 9, 4 * (new Circle({ center: { x: 0, y: 0 }, radius: 5 }).sample().length - 1) - 4);
   assert.equal(Math.max(...result.positions), 20);
 });
 

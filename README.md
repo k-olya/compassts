@@ -60,8 +60,11 @@ Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`
 Only rendering and STL export use triangles. The library-wide
 `TRIANGULATION_RESOLUTION` is `0.001` model units of chord deviation; circle
 segment counts are derived automatically from radius. `extrude` no longer takes
-`circleSegments`. Curve `at(t)` uses [0, 1], while `Circle.at(angle)` uses radians.
-`SpatialCurve`, `SpatialSurface`, their shorthands, and `SpatialBoundary` types
+`circleSegments`. `Circle` extends `PlanarCurve`, and every curve's `at(t)` uses
+[0, 1]. Use `circle.at(angle / (2 * Math.PI))` to evaluate radians. All loop
+samples include the repeated closing point. `SpatialCurve.fromPlanarCurve({ curve,
+plane })` lifts any planar curve into world space without sampling, replacing
+`fromCircle`. `PlanarCurve`, `SpatialCurve`, `SpatialSurface`, their shorthands, and `SpatialBoundary` types
 are included in the editor and documentation browser.
 
 Solids are memoized scene graph nodes and can be added directly to scenes,
