@@ -47,6 +47,18 @@ button:focus-visible { outline: 2px solid #f0c486; outline-offset: 3px; }
 .projection-button { margin-left: -8px; padding: 4px 8px; border: 0; border-radius: 5px; color: inherit; background: transparent; cursor: pointer; }
 .projection-button:hover { color: #eef0f4; background: #2b3b4c; }
 .pane-note { font-size: 12px; color: #7d8b9c; }
+.resolution-control { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8f9eae; }
+.resolution-input { width: 92px; display: grid; grid-template-columns: minmax(0, 1fr) 18px; border: 1px solid #3a4859; border-radius: 4px; background: #131b24; }
+.resolution-control input { width: 100%; min-width: 0; padding: 3px 6px; border: 0; border-radius: 4px 0 0 4px; background: transparent; color: #eef0f4; font: inherit; appearance: textfield; }
+.resolution-control input::-webkit-inner-spin-button, .resolution-control input::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; display: none; margin: 0; }
+.resolution-input:hover { border-color: #73859a; }
+.resolution-input:focus-within { outline: 2px solid #f0c486; outline-offset: 2px; }
+.resolution-control input:focus-visible { outline: none; }
+.resolution-arrows { display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); border-left: 1px solid #3a4859; }
+.resolution-arrows button { min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 2px; background: transparent; color: #8f9eae; cursor: pointer; }
+.resolution-arrows svg { width: 10px; height: 10px; }
+.resolution-arrows button:focus-visible { outline-offset: -2px; }
+.resolution-arrows button:hover { color: #eef0f4; background: #2b3b4c; }
 .js-label { font-family: monospace; font-size: 12px; color: #e7be71; padding-right: 8px; }
 .editor-container, .viewer-body { flex: 1; min-height: 0; position: relative; }
 .viewer-container { position: absolute; inset: 0; overflow: hidden; }

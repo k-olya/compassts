@@ -1,9 +1,12 @@
 import { create } from "zustand";
+import { TRIANGULATION_RESOLUTION, setTriangulationResolution } from "libcompass";
 import { DEFAULT_CODE, evaluateCode, exportBinaryStl, type RenderedScene } from "./cad.ts";
 import { errorEntry, type ConsoleEntry } from "./script-console.ts";
 
 interface CadState {
   code: string;
+  resolution: number;
+  setResolution: (resolution: number) => void;
   rendered: RenderedScene;
   error: string | null;
   evaluationError: ConsoleEntry | null;
@@ -20,6 +23,13 @@ let activeRun = 0;
 
 export const useCadStore = create<CadState>((set, get) => ({
   code: DEFAULT_CODE,
+  resolution: TRIANGULATION_RESOLUTION,
+  setResolution: (resolution) => {
+    setTriangulationResolution(resolution);
+    if (resolution === get().resolution) return;
+    set({ resolution });
+    get().render();
+  },
   rendered: evaluateCode(DEFAULT_CODE),
   error: null,
   evaluationError: null,
@@ -38,7 +48,7 @@ export const useCadStore = create<CadState>((set, get) => ({
       const rendered = evaluateCode(get().code, entry => {
         // Ignore delayed console output from scripts superseded by a new Render.
         if (run === activeRun) set(state => ({ consoleEntries: entry ? [...state.consoleEntries, entry] : [], consoleOpen: entry !== null }));
-      });
+      }, get().resolution);
       set({ rendered, error: null });
     } catch (error) {
       console.error(error);

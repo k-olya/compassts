@@ -50,14 +50,14 @@ export interface RenderedScene {
   source: string;
 }
 
-const bindings = { ...compass, glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
-
-export function evaluateCode(source: string, output?: ConsoleOutput): RenderedScene {
+export function evaluateCode(source: string, output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION): RenderedScene {
   // ponytail: synchronous, trusted local code; a worker is needed for execution time limits.
   // Block scope lets local names shadow library bindings such as sketch and circle.
   const body = `"use strict";\n{\n${source}\n;return scene;\n}\n//# sourceURL=compass-script.js`;
   let syntaxLocation: ScriptLocation | undefined;
   try {
+    compass.setTriangulationResolution(resolution);
+    const bindings = { ...compass, glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
     let evaluate: (...args: unknown[]) => unknown;
     try {
       evaluate = new Function("scene", "console", ...Object.keys(bindings), body) as typeof evaluate;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Circle, Node, Solid } from "libcompass";
+import { Circle, Node, Solid, setTriangulationResolution } from "libcompass";
 import { DEFAULT_CODE, evaluateCode, exportBinaryStl } from "../src/cad.ts";
 import { useCadStore } from "../src/store.ts";
 
@@ -30,6 +30,35 @@ test("render scopes isolate repeated declarations and expose math globals", () =
     }`;
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
+});
+
+test("resolution changes rerun the model, update script globals, and enforce bounds", () => {
+  const original = useCadStore.getState();
+  try {
+    useCadStore.getState().setCode(`console.log(TRIANGULATION_RESOLUTION);
+scene.add(sketch().add(circle({ center: { x: 0, y: 0 }, radius: 10 })).extrude({ length: 3 }));`);
+    useCadStore.getState().render();
+    const coarse = useCadStore.getState().rendered.positions.length;
+    assert.equal(useCadStore.getState().resolution, 0.1);
+    assert.equal(useCadStore.getState().consoleEntries[0].text, "0.1");
+    useCadStore.getState().setResolution(0.001);
+    assert.equal(useCadStore.getState().error, null);
+    assert.equal(useCadStore.getState().consoleEntries[0].text, "0.001");
+    assert.ok(useCadStore.getState().rendered.positions.length > coarse);
+    useCadStore.getState().setResolution(1);
+    assert.equal(useCadStore.getState().error, null);
+    assert.equal(useCadStore.getState().consoleEntries[0].text, "1");
+    assert.ok(useCadStore.getState().rendered.positions.length < coarse);
+    for (const invalid of [0.0009, 1.01, NaN, Infinity]) {
+      const previous = useCadStore.getState().rendered;
+      assert.throws(() => useCadStore.getState().setResolution(invalid), RangeError);
+      assert.equal(useCadStore.getState().resolution, 1);
+      assert.equal(useCadStore.getState().rendered, previous);
+    }
+  } finally {
+    setTriangulationResolution(original.resolution);
+    useCadStore.setState(original);
+  }
 });
 
 test("editor scripts can add and remove multiple child objects", () => {

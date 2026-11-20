@@ -80,7 +80,8 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   for (const name of ["sketch", "circle", "transformMat4Node"]) assert.equal(folder(name), "shorthands");
   assert.equal(folder("extrude"), "operations");
   assert.equal(folder("extrudeAlongCurve"), "operations");
-  for (const name of ["functionalize", "transformMat4", "PI", "radtodeg", "degtorad"]) assert.equal(folder(name), "util");
+  for (const name of ["functionalize", "transformMat4", "PI", "radtodeg", "degtorad", "TRIANGULATION_RESOLUTION", "setTriangulationResolution"]) assert.equal(folder(name), "util");
+  assert.equal(api.entries.find(entry => entry.name === "TRIANGULATION_RESOLUTION").kind, "Variable");
   assert.equal(api.entries.find(entry => entry.name === "PI").kind, "Constant");
   assert.match(api.entries.find(entry => entry.name === "radtodeg").description, /radians to degrees/);
   assert.match(api.entries.find(entry => entry.name === "degtorad").description, /degrees to radians/);
@@ -100,6 +101,8 @@ test("editor globals resolve libcompass and gl-matrix types and documentation", 
 const center = { x: 0, y: 0 };
 const angleDEG = radtodeg(PI / 4);
 const angleRAD = degtorad(angleDEG);
+setTriangulationResolution(0.1);
+const resolution = TRIANGULATION_RESOLUTION;
 /** @type {Vertex} */
 const vertex = { position: [0, 0, 0] };
 const s = new Sketch({ plane: new Plane({ a: vertex }) });

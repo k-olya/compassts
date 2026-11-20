@@ -89,8 +89,15 @@ entries in the docs browser's Util folder.
 Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`
 (`Face` or `SpatialSurface`) and shared `boundaries` (`Edge` or `SpatialCurve`).
 Sweeps also use a temporary mesh to check for invalid geometry. The library-wide
-`TRIANGULATION_RESOLUTION` is a `0.001` model-unit target for midpoint-to-chord
-deviation. Every curve uses the same adaptive midpoint sampling algorithm. `extrude` no longer takes
+`TRIANGULATION_RESOLUTION` is a configurable model-unit target for midpoint-to-chord
+deviation, defaulting to `0.1`. The Resolution field above the preview replaces
+the Z-up label: enter a value from `0.001` to `1`, then press Enter or leave the
+field to rebuild the model. The field's arrow buttons and keyboard Up/Down
+double/halve the value and rebuild immediately. Out-of-range values are clamped;
+Escape cancels a typed edit. Smaller values produce more triangles. STL export uses the last rendered
+mesh at its chosen resolution. The library also exports
+`setTriangulationResolution(value)` for direct use. Closed curves keep at least
+four segments at coarse settings. Every curve uses the same adaptive midpoint sampling algorithm. `extrude` no longer takes
 `circleSegments`. `Circle` extends `PlanarCurve`, and every curve's `at(t)` uses
 [0, 1]. Use `circle.at(angleDEG / 360)` for degrees or
 `circle.at(angleRAD / (2 * PI))` for radians. All loop

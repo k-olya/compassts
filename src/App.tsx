@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FiArrowUp, FiBookOpen, FiBox, FiCircle, FiLayers, FiMaximize, FiMinimize, FiMinus, FiMove, FiRotateCw, FiSquare } from "react-icons/fi";
+import { useRef, useState } from "react";
+import { FiArrowUp, FiBookOpen, FiBox, FiChevronDown, FiChevronUp, FiCircle, FiLayers, FiMaximize, FiMinimize, FiMinus, FiMove, FiRotateCw, FiSquare } from "react-icons/fi";
 import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor from "./Editor.tsx";
@@ -27,9 +27,18 @@ export default function App() {
   const [editorLocation, setEditorLocation] = useState<ScriptLocation | null>(null);
   const [orthographic, setOrthographic] = useState(false);
   const [docsOpen, setDocsOpen] = useState(false);
-  const { code, rendered, error, render, exportStl } = useCadStore();
+  const { code, rendered, error, render, exportStl, resolution, setResolution } = useCadStore();
+  const resolutionInput = useRef<HTMLInputElement>(null);
   const triangles = rendered.positions.length / 9;
   const changed = code !== rendered.source;
+  const stepResolution = (factor: number) => {
+    const input = resolutionInput.current;
+    if (!input) return;
+    const current = Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : resolution;
+    const next = Math.min(1, Math.max(0.001, current * factor));
+    input.value = String(next);
+    setResolution(next);
+  };
 
   return (
     <main className="workspace">
@@ -78,7 +87,32 @@ export default function App() {
               <button type="button" className="projection-button" onClick={() => setOrthographic(value => !value)} title={`Switch to ${orthographic ? "perspective" : "orthographic"} camera`}>
                 {orthographic ? "Orthographic" : "Perspective"}
               </button>
-              <span className="pane-note">Z up</span>
+              <div className="resolution-control">
+                <label htmlFor="triangulation-resolution">Resolution</label>
+                <div className="resolution-input">
+                  <input ref={resolutionInput} id="triangulation-resolution" type="number" aria-label="Triangulation resolution"
+                    min="0.001" max="1" step="any" defaultValue={resolution}
+                    title="Maximum curve deviation (0.001–1). Up doubles; Down halves and applies immediately. Apply typed values with Enter or blur."
+                    onBlur={event => {
+                      const input = event.currentTarget;
+                      const next = Number.isFinite(input.valueAsNumber) ? Math.min(1, Math.max(0.001, input.valueAsNumber)) : resolution;
+                      input.value = String(next);
+                      setResolution(next);
+                    }}
+                    onKeyDown={event => {
+                      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        stepResolution(event.key === "ArrowUp" ? 2 : 0.5);
+                      }
+                      if (event.key === "Escape") event.currentTarget.value = String(resolution);
+                      if (event.key === "Enter" || event.key === "Escape") event.currentTarget.blur();
+                    }} />
+                  <div className="resolution-arrows" onPointerDown={event => event.preventDefault()}>
+                    <button type="button" aria-label="Double resolution" title="Double resolution" onClick={() => stepResolution(2)}><FiChevronUp aria-hidden="true" /></button>
+                    <button type="button" aria-label="Halve resolution" title="Halve resolution" onClick={() => stepResolution(0.5)}><FiChevronDown aria-hidden="true" /></button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="viewer-body"><Viewer orthographic={orthographic} /><span className="viewer-hint">Drag / Alt + move to orbit · Scroll to zoom · Right-drag / Shift + move to pan</span></div>
           </section>
