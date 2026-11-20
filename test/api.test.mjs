@@ -22,7 +22,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.match(node.members.find(member => member.name === "add").signature, /add\(\.\.\.children: Node\[\]\): this/);
   assert.match(node.members.find(member => member.name === "remove").description, /object identity/);
   assert.match(api.entries.find(entry => entry.name === "Solid").signature, /extends Memo/);
-  for (const name of ["Point", "Vertex", "SpatialBoundary"]) {
+  for (const name of ["Point", "Vertex", "SpatialBoundary", "PlanarLoop"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Interface");
     assert.equal(entry.signature, `interface ${name}`);
@@ -55,9 +55,22 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.ok(spatialCurve.members.some(member => member.name === "sampleParameters"));
   assert.match(api.entries.find(entry => entry.name === "Circle").signature, /extends PlanarCurve/);
   assert.match(api.entries.find(entry => entry.name === "PlanarCurve").members.find(member => member.name === "at").tags.find(tag => tag.name === "param").text, /\[0, 1\]/);
+  const planarCurve = api.entries.find(entry => entry.name === "PlanarCurve");
+  for (const name of ["area", "contains", "sample", "sampleParameters"]) {
+    assert.ok(planarCurve.members.some(member => member.name === name));
+  }
+  assert.ok(!planarCurve.members.some(member => member.name === "intersects"));
   assert.match(api.entries.find(entry => entry.name === "SpatialSurface").description, /exact ruled surface/);
   assert.match(api.entries.find(entry => entry.name === "Face").signature, /extends Surface/);
   assert.doesNotMatch(extrude.signature, /circleSegments/);
+});
+
+test("documentation folders distinguish constructors, shorthands, and utilities", () => {
+  const folder = name => api.entries.find(entry => entry.name === name)?.folder;
+  for (const name of ["Sketch", "Circle", "PlanarCurve", "PlanarLoop", "Point", "SketchElement"]) assert.equal(folder(name), "classes");
+  for (const name of ["sketch", "circle", "transformMat4Node"]) assert.equal(folder(name), "shorthands");
+  for (const name of ["extrude", "functionalize", "transformMat4"]) assert.equal(folder(name), "util");
+  assert.ok(api.entries.every(entry => ["classes", "shorthands", "util"].includes(entry.folder)));
 });
 
 test("editor globals resolve libcompass and gl-matrix types and documentation", () => {
@@ -90,6 +103,10 @@ const sketchElement = localCurve;
 sketch().add(sketchElement);
 /** @type {PlanarCurve} */
 const planar = localCurve;
+/** @type {PlanarLoop} */
+const planarLoop = circle({ center, radius: 3 });
+const enclosedArea = planarLoop.area();
+const inside = planarLoop.contains({ point: center });
 const lifted = SpatialCurve.fromPlanarCurve({ curve: planar });
 const liftedFunction = SpatialCurve.fromPlanarCurve({ curve: { at: t => ({ x: t, y: t * t }) } });
 const parameters = liftedFunction.sampleParameters({ resolution: 0.001 });

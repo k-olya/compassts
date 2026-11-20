@@ -13,6 +13,9 @@ page are preserved when switching views.
 
 The book button in the left toolbar switches the right pane between the model
 and searchable libcompass API documentation, preserving both views' state.
+The docs index has collapsible Classes (including interfaces and types),
+Shorthands, and Util folders. Search shows matches across all folders, and
+documentation links open the folder containing their target.
 Signatures, TSDoc, parameters, and examples are generated from libcompass source
 when Vite starts or builds, and update during development when that source changes.
 The same declarations power Monaco's hover tooltips, completions, and signature
@@ -58,8 +61,8 @@ are available to Monaco, including through JavaScript JSDoc annotations.
 Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`
 (`Face` or `SpatialSurface`) and shared `boundaries` (`Edge` or `SpatialCurve`).
 Only rendering and STL export use triangles. The library-wide
-`TRIANGULATION_RESOLUTION` is `0.001` model units of chord deviation; circle
-segment counts are derived automatically from radius. `extrude` no longer takes
+`TRIANGULATION_RESOLUTION` is a `0.001` model-unit target for midpoint-to-chord
+deviation. Every curve uses the same adaptive midpoint sampling algorithm. `extrude` no longer takes
 `circleSegments`. `Circle` extends `PlanarCurve`, and every curve's `at(t)` uses
 [0, 1]. Use `circle.at(angle / (2 * Math.PI))` to evaluate radians. All loop
 samples include the repeated closing point. `SpatialCurve.fromPlanarCurve({ curve,
@@ -67,10 +70,20 @@ plane })` lifts any planar curve into world space without sampling, replacing
 `fromCircle`. `PlanarCurve`, `SpatialCurve`, `SpatialSurface`, their shorthands, and `SpatialBoundary` types
 are included in the editor and documentation browser.
 
-Curve lifting also accepts plain `at(t)` evaluators. Subdivision is delegated
-through `sampleParameters({ resolution })`; `Circle` owns its radius-based rule,
-while generic curves use adaptive evaluation. `Sketch.fromFace(face)` creates an
+Curve lifting also accepts plain `at(t)` evaluators. The default `sample()` uses
+`sampleParameters({ resolution })`, starting with `[0, 0.5, 1]` and halving
+intervals until midpoint deviation is at most the resolution. Oscillatory curves
+can override `sample()` directly; analysis, lifting, and tessellation honor that
+override. `Sketch.fromFace(face)` creates an
 empty sketch on that face's plane, without copying its boundary geometry.
+Extrusion supports general closed planar curves and mixed profiles assembled from
+open curves and line segments. `PlanarLoop` exposes `area()` and
+`contains({ point })`; these types and curve sampling methods are available in
+Monaco and the docs browser. Profiles analyze temporary sampled polylines, while
+solids retain the original curves and shared topology. Profile checks and
+tessellation have no circle-specific rules. Analysis can lose features smaller
+than the sampling resolution, and midpoint probes can miss oscillations between
+probes.
 
 Solids are memoized scene graph nodes and can be added directly to scenes,
 `Transform`, and `TransformMat4` nodes. Call `refresh()` on affected memoized

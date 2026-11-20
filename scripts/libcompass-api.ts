@@ -75,7 +75,11 @@ export function readLibcompassApi() {
           ...documentation(member),
         }];
       });
-      return [{ name: node.name.text, kind: ts.isClassDeclaration(node) ? "Class" : ts.isInterfaceDeclaration(node) ? "Interface" : ts.isFunctionDeclaration(node) ? "Function" : "Type", signature, ...documentation(node), members }];
+      const docs = documentation(node);
+      const folder = ts.isFunctionDeclaration(node)
+        ? docs.description.includes("Constructor shorthand for") ? "shorthands" : "util"
+        : "classes";
+      return [{ name: node.name.text, folder, kind: ts.isClassDeclaration(node) ? "Class" : ts.isInterfaceDeclaration(node) ? "Interface" : ts.isFunctionDeclaration(node) ? "Function" : "Type", signature, ...docs, members }];
     });
   }).sort((a, b) => a.name.localeCompare(b.name));
   for (const path of Object.keys(libraries)) {

@@ -1,9 +1,15 @@
 import { useState } from "react";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
+import { FiChevronDown, FiChevronRight, FiFolder } from "react-icons/fi";
 import api from "virtual:libcompass-api";
 
 type Documentation = Pick<(typeof api.entries)[number], "description" | "tags">;
+const folders = [
+  { id: "classes", label: "Classes" },
+  { id: "shorthands", label: "Shorthands" },
+  { id: "util", label: "Util" },
+];
 
 function Markdown({ text }: { text: string }) {
   const markdown = text.replace(/\{@link\s+([^}| ]+)(?:\s*\|?\s*([^}]+))?\}/g, (_match, target: string, label?: string) => {
@@ -28,23 +34,45 @@ function Documentation({ description, tags }: Documentation) {
 export default function Docs() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("Sketch");
+  const [collapsed, setCollapsed] = useState<string[]>([]);
   const search = query.trim().toLowerCase();
   const entries = api.entries.filter(entry => [entry.name, entry.description, ...entry.members.flatMap(member => [member.name, member.description])].some(text => text.toLowerCase().includes(search)));
   const entry = entries.find(entry => entry.name === selected) ?? entries[0];
 
   return <>
     <div className="docs-search">
-      <input type="search" aria-label="Search libcompass documentation" placeholder="Search classes, functions, members…" value={query} onChange={event => setQuery(event.target.value)} />
+      <input type="search" aria-label="Search libcompass documentation" placeholder="Search classes, functions, members…" value={query} onChange={event => {
+        setQuery(event.target.value);
+        setCollapsed([]);
+      }} />
     </div>
     <div className="docs-body" onClick={event => {
       const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#api-"]');
       if (!link) return;
       event.preventDefault();
       setQuery("");
-      setSelected(link.hash.slice(5));
+      const name = link.hash.slice(5);
+      setSelected(name);
+      setCollapsed(current => current.filter(folder => folder !== api.entries.find(item => item.name === name)?.folder));
     }}>
       <nav className="docs-index" aria-label="libcompass API">
-        {entries.map(item => <button type="button" key={item.name} aria-current={item.name === entry?.name ? "page" : undefined} onClick={() => setSelected(item.name)}>{item.name}</button>)}
+        {folders.map(folder => {
+          const items = entries.filter(item => item.folder === folder.id);
+          if (!items.length) return null;
+          const expanded = !collapsed.includes(folder.id);
+          return <div className="docs-folder" key={folder.id}>
+            <button type="button" className="docs-folder-toggle" aria-expanded={expanded} aria-controls={`docs-folder-${folder.id}`} onClick={() => {
+              setCollapsed(current => expanded ? [...current, folder.id] : current.filter(id => id !== folder.id));
+            }}>
+              {expanded ? <FiChevronDown aria-hidden="true" /> : <FiChevronRight aria-hidden="true" />}
+              <FiFolder aria-hidden="true" />
+              {folder.label}
+            </button>
+            <div className="docs-folder-items" id={`docs-folder-${folder.id}`} hidden={!expanded}>
+              {items.map(item => <button type="button" key={item.name} aria-current={item.name === entry?.name ? "page" : undefined} onClick={() => setSelected(item.name)}>{item.name}</button>)}
+            </div>
+          </div>;
+        })}
         {!entries.length && <p>No matching API entries.</p>}
       </nav>
       {entry && <article className="docs-article" key={entry.name} aria-label={`${entry.name} documentation`}>

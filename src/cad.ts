@@ -29,7 +29,7 @@ s.add(
   circle({ center: { x: 28, y: 0 }, radius: 10 }),
 );
 
-// Curves remain exact; Render samples them at 0.001 resolution.
+// Profile analysis uses polylines; the solid retains exact curves.
 const part = extrude({ sketch: s, direction: [0, 0, height] });
 scene.add(part);
 `;
