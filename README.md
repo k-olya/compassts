@@ -5,7 +5,11 @@ left, inspect the model or API documentation on the right, and export binary STL
 Render and Export STL stay in the top menu.
 
 The left icon toolbar selects 3D or 2D code tools and opens the documentation
-browser. Tool buttons are currently disabled placeholders. Toolbar sections have
+browser. 3D tools insert `extrude` and `extrudeAlongCurve` calls; 2D tools insert
+`sketch`, `lineSegment`, and `planarCurve` calls. Each inserts an options template
+at the editor cursor, replacing the current selection. Tab / Shift+Tab move
+between editable values; Undo removes the insertion. Tools restore the editor
+when it is hidden and leave rendering to the Render button. Toolbar sections have
 visible separators, and the tool section changes with the selected mode. The
 right toolbar's expand button hides or restores the editor without entering
 browser fullscreen. Editor contents, the camera, and the selected documentation

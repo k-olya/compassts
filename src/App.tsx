@@ -1,23 +1,38 @@
 import { useRef, useState } from "react";
-import { FiArrowUp, FiBookOpen, FiBox, FiChevronDown, FiChevronUp, FiCircle, FiLayers, FiMaximize, FiMinimize, FiMinus, FiMove, FiRotateCw, FiSquare } from "react-icons/fi";
+import { FiBookOpen, FiChevronDown, FiChevronUp, FiMaximize, FiMinimize } from "react-icons/fi";
 import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
-import Editor from "./Editor.tsx";
+import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
+import { ExtrudeIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
 
 const toolSections = {
   "3d": [
-    { label: "Extrude", Icon: FiArrowUp },
-    { label: "Revolve", Icon: FiRotateCw },
-    { label: "Move", Icon: FiMove },
+    {
+      label: "Extrude", Icon: ExtrudeIcon,
+      snippet: "extrude({\n  sketch: ${1:s},\n  length: ${2:10},\n  axis: ${3:Z},\n  angle: ${4:0},\n})$0",
+    },
+    {
+      label: "Extrude along curve", Icon: SweepIcon,
+      snippet: "extrudeAlongCurve({\n  sketch: ${1:s},\n  curve: ${2:path},\n})$0",
+    },
   ],
   "2d": [
-    { label: "Line", Icon: FiMinus },
-    { label: "Rectangle", Icon: FiSquare },
-    { label: "Circle", Icon: FiCircle },
+    {
+      label: "Sketch", Icon: SketchIcon,
+      snippet: "sketch({\n  plane: ${1:XY},\n})$0",
+    },
+    {
+      label: "Line segment", Icon: LineSegmentIcon,
+      snippet: "lineSegment({\n  start: { x: ${1:0}, y: ${2:0} },\n  end: { x: ${3:10}, y: ${4:0} },\n})$0",
+    },
+    {
+      label: "Planar curve", Icon: PlanarCurveIcon,
+      snippet: "planarCurve({\n  at: t => ({\n    x: ${1:10} * t,\n    y: ${2:10} * t * t,\n  }),\n})$0",
+    },
   ],
 };
 
@@ -28,6 +43,7 @@ export default function App() {
   const [orthographic, setOrthographic] = useState(false);
   const [docsOpen, setDocsOpen] = useState(false);
   const { code, rendered, error, render, exportStl, resolution, setResolution } = useCadStore();
+  const editor = useRef<EditorHandle>(null);
   const resolutionInput = useRef<HTMLInputElement>(null);
   const triangles = rendered.positions.length / 9;
   const changed = code !== rendered.source;
@@ -60,18 +76,21 @@ export default function App() {
         <SideToolbar label="Code tools">
           <ToolbarSection label="Code commands">
             <button type="button" aria-label="3D tools" title="3D tools" aria-pressed={toolMode === "3d"} onClick={() => setToolMode("3d")}>
-              <FiBox aria-hidden="true" />
+              <SolidToolsIcon />
             </button>
             <button type="button" aria-label="2D tools" title="2D tools" aria-pressed={toolMode === "2d"} onClick={() => setToolMode("2d")}>
-              <FiLayers aria-hidden="true" />
+              <PlanarToolsIcon />
             </button>
             <button type="button" aria-label="Documentation" title={docsOpen ? "Show 3D view" : "Browse libcompass documentation"} aria-pressed={docsOpen} aria-controls="docs-pane" onClick={() => setDocsOpen(open => !open)}>
               <FiBookOpen aria-hidden="true" />
             </button>
           </ToolbarSection>
           <ToolbarSection key={toolMode} label={`${toolMode.toUpperCase()} tools`}>
-            {toolSections[toolMode].map(({ label, Icon }) => (
-              <button key={label} type="button" aria-label={`${label} (coming soon)`} title={`${label} (coming soon)`} disabled>
+            {toolSections[toolMode].map(({ label, Icon, snippet }) => (
+              <button key={label} type="button" aria-label={label} title={`Insert ${label.toLowerCase()} call`} onClick={() => {
+                setViewExpanded(false);
+                requestAnimationFrame(() => editor.current?.insertSnippet(snippet));
+              }}>
                 <Icon aria-hidden="true" />
               </button>
             ))}
@@ -80,7 +99,7 @@ export default function App() {
         <div className={`panes${viewExpanded ? " panes-expanded" : ""}`}>
           <section id="code-pane" className="pane editor-pane" aria-label="Code editor" hidden={viewExpanded}>
             <div className="pane-header"><span><span className="js-label">JS</span> model.js</span><span className="pane-note">Ctrl / ⌘ + Enter</span></div>
-            <Editor location={editorLocation} />
+            <Editor ref={editor} location={editorLocation} />
           </section>
           <section className="pane viewer-pane" aria-label="3D model preview" hidden={docsOpen}>
             <div className="pane-header">

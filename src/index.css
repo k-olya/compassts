@@ -35,6 +35,7 @@ button:focus-visible { outline: 2px solid #f0c486; outline-offset: 3px; }
 .toolbar-section + .toolbar-section { border-top: 1px solid #3a4859; margin-top: 10px; padding-top: 10px; }
 .side-toolbar button { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0; padding: 0; border: 1px solid transparent; border-radius: 5px; color: #a9b8c9; background: transparent; cursor: pointer; }
 .side-toolbar svg { width: 20px; height: 20px; }
+.side-toolbar .cad-tool-icon { width: 22px; height: 22px; }
 .side-toolbar button:hover:enabled { color: #eef0f4; background: #2b3b4c; }
 .side-toolbar button[aria-pressed="true"] { color: #f0c486; border-color: #806440; background: #3b3329; }
 .side-toolbar button:disabled { opacity: 0.4; cursor: default; }

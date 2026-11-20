@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import "monaco-editor/esm/vs/editor/editor.all.js";
 import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js";
@@ -15,9 +15,25 @@ self.MonacoEnvironment = {
   },
 };
 
-export default function Editor({ location }: { location: ScriptLocation | null }) {
+export interface EditorHandle {
+  insertSnippet: (snippet: string) => void;
+}
+
+export default function Editor({ location, ref }: { location: ScriptLocation | null; ref: Ref<EditorHandle> }) {
   const container = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    insertSnippet(snippet) {
+      const editor = editorRef.current;
+      if (!editor) return;
+      editor.layout();
+      editor.focus();
+      editor.getContribution<monaco.editor.IEditorContribution & { insert: (template: string) => void }>("snippetController2")?.insert(snippet);
+      const position = editor.getPosition();
+      if (position) editor.revealPositionInCenterIfOutsideViewport(position);
+    },
+  }), []);
 
   useEffect(() => {
     const libraries = [javascriptDefaults, typescriptDefaults].flatMap(defaults => {
