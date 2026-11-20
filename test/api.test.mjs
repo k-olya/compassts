@@ -65,12 +65,14 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.doesNotMatch(extrude.signature, /circleSegments/);
 });
 
-test("documentation folders distinguish constructors, shorthands, and utilities", () => {
+test("documentation folders distinguish constructors, shorthands, operations, and utilities", () => {
   const folder = name => api.entries.find(entry => entry.name === name)?.folder;
   for (const name of ["Sketch", "Circle", "PlanarCurve", "PlanarLoop", "Point", "SketchElement"]) assert.equal(folder(name), "classes");
   for (const name of ["sketch", "circle", "transformMat4Node"]) assert.equal(folder(name), "shorthands");
-  for (const name of ["extrude", "functionalize", "transformMat4"]) assert.equal(folder(name), "util");
-  assert.ok(api.entries.every(entry => ["classes", "shorthands", "util"].includes(entry.folder)));
+  assert.equal(folder("extrude"), "operations");
+  for (const name of ["functionalize", "transformMat4"]) assert.equal(folder(name), "util");
+  assert.ok(api.entries.every(entry => ["classes", "shorthands", "operations", "util"].includes(entry.folder)));
+  assert.ok(api.libraries["file:///node_modules/libcompass/operations/extrude.d.ts"]);
 });
 
 test("editor globals resolve libcompass and gl-matrix types and documentation", () => {

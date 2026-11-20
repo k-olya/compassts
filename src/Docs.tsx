@@ -8,6 +8,7 @@ type Documentation = Pick<(typeof api.entries)[number], "description" | "tags">;
 const folders = [
   { id: "classes", label: "Classes" },
   { id: "shorthands", label: "Shorthands" },
+  { id: "operations", label: "Operations" },
   { id: "util", label: "Util" },
 ];
 

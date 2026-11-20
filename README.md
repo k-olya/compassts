@@ -14,8 +14,12 @@ page are preserved when switching views.
 The book button in the left toolbar switches the right pane between the model
 and searchable libcompass API documentation, preserving both views' state.
 The docs index has collapsible Classes (including interfaces and types),
-Shorthands, and Util folders. Search shows matches across all folders, and
-documentation links open the folder containing their target.
+Shorthands, Operations, and Util folders. Search shows matches across all folders, and
+documentation links open the folder containing their target. Operations such as
+`extrude` work on CAD math objects; Util contains general helpers such as
+`functionalize` and the packed-coordinate `transformMat4`. Folder assignment
+follows libcompass's `src/operations/` and `src/util/` structure; internal geometry
+helpers are not part of the public docs.
 Signatures, TSDoc, parameters, and examples are generated from libcompass source
 when Vite starts or builds, and update during development when that source changes.
 The same declarations power Monaco's hover tooltips, completions, and signature

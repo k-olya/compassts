@@ -77,7 +77,7 @@ export function readLibcompassApi() {
       });
       const docs = documentation(node);
       const folder = ts.isFunctionDeclaration(node)
-        ? docs.description.includes("Constructor shorthand for") ? "shorthands" : "util"
+        ? docs.description.includes("Constructor shorthand for") ? "shorthands" : path.includes("/operations/") ? "operations" : "util"
         : "classes";
       return [{ name: node.name.text, folder, kind: ts.isClassDeclaration(node) ? "Class" : ts.isInterfaceDeclaration(node) ? "Interface" : ts.isFunctionDeclaration(node) ? "Function" : "Type", signature, ...docs, members }];
     });
