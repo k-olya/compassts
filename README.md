@@ -70,6 +70,7 @@ if the profile reaches a point before length 20. The built-in plate example uses
 a small positive draft. Curves use `tangent(t)` with a numerical default and an
 optional exact evaluator or method override. Sharp curved joins, intersecting
 offsets, and collapses to a line currently report that offset trimming is needed.
+The default example also places a torus beside the plate using `extrudeAlongCurve`.
 
 Constructors take named options objects, such as `new Circle({ center, radius })`
 and `new TransformMat4({ matrix })`. Their lowercase shorthands use the same

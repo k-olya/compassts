@@ -7,10 +7,15 @@ import { useCadStore } from "../src/store.ts";
 test("the example evaluates into a Node scene using real libcompass geometry", () => {
   const result = evaluateCode(DEFAULT_CODE);
   assert.ok(result.scene instanceof Node);
-  assert.equal(result.scene.children.length, 1);
+  assert.equal(result.scene.children.length, 2);
   assert.ok(result.scene.children[0] instanceof Solid);
   assert.equal(result.scene.children[0].surfaces.length, 8);
   assert.equal(result.scene.children[0].boundaries.length, 16);
+  const torus = result.scene.children[1];
+  assert.ok(torus instanceof Solid);
+  assert.equal(torus.surfaces.length, 1);
+  assert.equal(torus.boundaries.length, 0);
+  assert.ok(torus.surfaces[0].periodicU && torus.surfaces[0].periodicV);
   assert.ok(!DEFAULT_CODE.includes("circleSegments"));
   assert.ok(result.positions.length > 0);
   assert.equal(result.positions.length % 9, 0);

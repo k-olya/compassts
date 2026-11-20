@@ -33,6 +33,15 @@ s.add(
 // Profile analysis uses polylines; the solid retains exact curves.
 const part = extrude({ sketch: s, length: height, angle: angleDEG });
 scene.add(part);
+
+// Sweep a circular section around a closed path to make a torus beside the plate.
+const section = sketch().add(circle({ center: { x: 0, y: 0 }, radius: 1 }));
+const path = SpatialCurve.fromPlanarCurve({
+  curve: circle({ center: { x: 0, y: -46 }, radius: 8 }),
+  plane: plane({ a: [0, 0, 1], b: [1, 0, 1], c: [0, 1, 1] }),
+});
+const torus = extrudeAlongCurve({ sketch: section, curve: path });
+scene.add(torus);
 `;
 
 export interface RenderedScene {
