@@ -1,14 +1,22 @@
+import { consoleValueText } from "./console-values.ts";
+
 export interface ScriptLocation {
   line: number;
   column: number;
 }
 
 export interface ConsoleEntry {
+  id: number;
   level: "log" | "info" | "warn" | "error" | "debug";
   text: string;
+  parts?: ConsolePart[];
   location?: ScriptLocation;
   stack?: string;
 }
+
+export type ConsolePart = { text: string } | { value: unknown };
+
+let nextEntryId = 0;
 
 export type ConsoleOutput = (entry: ConsoleEntry | null) => void;
 
@@ -29,6 +37,7 @@ function scriptTrace(stack = "") {
 export function errorEntry(error: unknown, location?: ScriptLocation, context?: string): ConsoleEntry {
   const trace = scriptTrace(error instanceof Error ? error.stack : undefined);
   return {
+    id: nextEntryId++,
     level: "error",
     text: `${context ? `${context}: ` : ""}${error instanceof Error ? error.toString() : String(error)}`,
     location: location ?? trace.location,
@@ -36,39 +45,31 @@ export function errorEntry(error: unknown, location?: ScriptLocation, context?: 
   };
 }
 
-function inspect(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value instanceof Error) return value.toString();
-  const seen = new WeakSet<object>();
-  try {
-    return JSON.stringify(value, (_key, item: unknown) => {
-      if (typeof item === "bigint") return `${item}n`;
-      if (typeof item === "object" && item !== null) {
-        if (seen.has(item)) return "[Circular]";
-        seen.add(item);
-      }
-      return item;
-    }, 2) ?? String(value);
-  } catch {
-    return "[Unserializable value]";
-  }
-}
-
-function format(args: unknown[]): string {
-  if (!args.length) return "";
+function format(args: unknown[]): ConsolePart[] {
+  const parts: ConsolePart[] = [];
   const rest = [...args];
-  const first = rest.shift();
-  if (typeof first !== "string") return [first, ...rest].map(inspect).join(" ");
-  const text = first.replace(/%[%sdifoOc]/g, token => {
-    if (token === "%%") return "%";
-    if (!rest.length) return token;
-    const value = rest.shift();
-    if (token === "%c") return "";
-    if (token === "%d" || token === "%i") return String(parseInt(String(value), 10));
-    if (token === "%f") return String(parseFloat(String(value)));
-    return inspect(value);
-  });
-  return [text, ...rest.map(inspect)].join(" ");
+  if (typeof rest[0] === "string") {
+    const first = rest.shift() as string;
+    let offset = 0;
+    for (const match of first.matchAll(/%[%sdifoOc]/g)) {
+      parts.push({ text: first.slice(offset, match.index) });
+      const token = match[0];
+      if (token === "%%" || !rest.length) parts.push({ text: token === "%%" ? "%" : token });
+      else {
+        const value = rest.shift();
+        if (token === "%o" || token === "%O") parts.push({ value });
+        else if (token !== "%c") parts.push({ text: token === "%d" || token === "%i" ? String(parseInt(String(value), 10))
+          : token === "%f" ? String(parseFloat(String(value))) : consoleValueText(value) });
+      }
+      offset = match.index + token.length;
+    }
+    parts.push({ text: first.slice(offset) });
+  }
+  for (const value of rest) {
+    if (parts.length) parts.push({ text: " " });
+    parts.push(typeof value === "string" ? { text: value } : { value });
+  }
+  return parts;
 }
 
 export function createScriptConsole(output: ConsoleOutput): Console {
@@ -87,7 +88,7 @@ export function createScriptConsole(output: ConsoleOutput): Console {
           if (args.shift()) return;
           args = ["Assertion failed:", ...args];
         }
-        const label = String(args[0] ?? "default");
+        const label = ["time", "timeLog", "timeEnd", "count", "countReset"].includes(key) ? String(args[0] ?? "default") : "";
         if (key === "time") { timers.set(label, performance.now()); return; }
         if (key === "timeLog" || key === "timeEnd") {
           const start = timers.get(label);
@@ -105,7 +106,9 @@ export function createScriptConsole(output: ConsoleOutput): Console {
         const level = key === "assert" || key === "error" ? "error"
           : key === "warn" ? "warn" : key === "info" ? "info" : key === "debug" || key === "trace" ? "debug" : "log";
         const error = args.find(value => value instanceof Error);
-        output({ level, text: "  ".repeat(depth) + format(args), location: trace.location,
+        const parts: ConsolePart[] = [{ text: "  ".repeat(depth) }, ...format(args)];
+        output({ id: nextEntryId++, level, parts,
+          text: parts.map(part => "text" in part ? part.text : consoleValueText(part.value)).join(""), location: trace.location,
           stack: key === "trace" ? trace.stack : error instanceof Error ? scriptTrace(error.stack).stack : undefined });
         if (key === "group" || key === "groupCollapsed") depth++;
       };

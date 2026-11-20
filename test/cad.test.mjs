@@ -159,13 +159,15 @@ console.countReset("runs"); console.count("runs");
 console.time("build"); console.timeLog("build"); console.timeEnd("build");
 function nested() { console.trace("trace"); }
 nested();`, entry => entries.push(entry));
-  assert.equal(entries[0].text, 'value 42 {\n  "radius": 10\n}');
+  assert.equal(entries[0].text, 'value 42 Object {…}');
+  assert.deepEqual(entries[0].parts.find(part => "value" in part).value, { radius: 10 });
   assert.deepEqual(entries.slice(0, 5).map(entry => entry.level), ["log", "info", "warn", "error", "debug"]);
   assert.deepEqual(entries[0].location, { line: 1, column: 9 });
   assert.ok(entries[3].stack.includes("model.js:4:"));
   assert.equal(entries[5].text, "Assertion failed: bad assertion");
-  assert.match(entries[6].text, /2n/);
-  assert.match(entries[6].text, /\[Circular\]/);
+  const cyclic = entries[6].parts.find(part => "value" in part).value;
+  assert.equal(cyclic.value, 2n);
+  assert.equal(cyclic.self, cyclic);
   assert.deepEqual(entries.slice(8, 11).map(entry => entry.text), ["runs: 1", "runs: 2", "runs: 1"]);
   assert.match(entries[11].text, /^build: [\d.]+ ms$/);
   assert.match(entries[12].text, /^build: [\d.]+ ms$/);

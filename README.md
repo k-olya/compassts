@@ -168,7 +168,10 @@ ordinary `console.error()` output does not create editor diagnostics.
 The console also captures script `console.*` output (including objects,
 warnings, assertions, traces, counters, and timers), while forwarding it to the
 browser console. Output starts fresh on Render with no entry limit. The console
-opens when there is output and stays closed after a run with no output. Its X
+displays objects and arrays as collapsible trees, initially collapsed at every
+level. Expanding a value reads its current properties; getters are labeled without
+being invoked, and circular references are marked instead of expanded endlessly.
+The console opens when there is output and stays closed after a run with no output. Its X
 button closes it without clearing the current run's entries or editor markers;
 new output opens it again. `console.clear()` clears and closes it. Delayed output from a
 superseded run is ignored. Preview renderer errors use the same console, labeled
