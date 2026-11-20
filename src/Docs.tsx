@@ -9,6 +9,7 @@ const folders = [
   { id: "classes", label: "Classes" },
   { id: "shorthands", label: "Shorthands" },
   { id: "operations", label: "Operations" },
+  { id: "defaults", label: "Defaults" },
   { id: "util", label: "Util" },
 ];
 

@@ -14,12 +14,15 @@ page are preserved when switching views.
 The book button in the left toolbar switches the right pane between the model
 and searchable libcompass API documentation, preserving both views' state.
 The docs index has collapsible Classes (including interfaces and types),
-Shorthands, Operations, and Util folders. Search shows matches across all folders, and
+Shorthands, Operations, Defaults, and Util folders. Search shows matches across all folders, and
 documentation links open the folder containing their target. Operations such as
 `extrude` work on CAD math objects; Util contains general helpers such as
 `functionalize` and the packed-coordinate `transformMat4`. Folder assignment
-follows libcompass's `src/operations/` and `src/util/` structure; internal geometry
-helpers are not part of the public docs.
+follows libcompass's `src/operations/`, `src/defaults/`, and `src/util/` structure;
+internal geometry helpers are not part of the public docs. Defaults include
+origin planes `XY`, `ZX`, `YZ` and unit vectors `X`, `Y`, `Z`, available directly
+in scripts and Monaco tooltips. Plane letters give local axis order; the normals
+are +Z, +Y, and +X respectively. Treat shared defaults as immutable.
 Signatures, TSDoc, parameters, and examples are generated from libcompass source
 when Vite starts or builds, and update during development when that source changes.
 The same declarations power Monaco's hover tooltips, completions, and signature
@@ -50,9 +53,14 @@ libcompass `Node` in each evaluation's global scope. Add child nodes with `add`:
 
 ```js
 const s = sketch().add(circle({ center: { x: 0, y: 0 }, radius: 20 }));
-const part = extrude({ sketch: s, direction: [0, 0, 10] });
+const part = extrude({ sketch: s, length: 10 });
 scene.add(part);
 ```
+
+Extrusion takes a signed `length` and an optional nonzero `axis`, normalized
+internally without modifying it, which defaults to the sketch plane normal.
+Use a negative length to extrude in the opposite
+direction, or pass an axis explicitly: `extrude({ sketch: s, axis: Z, length: -10 })`.
 
 Constructors take named options objects, such as `new Circle({ center, radius })`
 and `new TransformMat4({ matrix })`. Their lowercase shorthands use the same

@@ -27,9 +27,9 @@ test("render scopes isolate repeated declarations and expose gl-matrix", () => {
 test("editor scripts can add and remove multiple child objects", () => {
   const source = `
     const sketch = new Sketch().add(new Circle({ center: { x: 0, y: 0 }, radius: 5 }));
-    const first = extrude({ sketch, direction: [0, 0, 10] });
-    const second = extrude({ sketch, direction: [0, 0, 20] });
-    const third = extrude({ sketch, direction: [0, 0, 30] });
+    const first = extrude({ sketch, length: 10 });
+    const second = extrude({ sketch, length: 20 });
+    const third = extrude({ sketch, length: 30 });
     scene.add(first, second, third).remove(first, third);
   `;
   const result = evaluateCode(source);

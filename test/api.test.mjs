@@ -15,7 +15,11 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.match(sketch.members.find(member => member.name === "fromFace").description, /empty sketch/);
   const extrude = api.entries.find(entry => entry.name === "extrude");
   assert.ok(extrude.tags.some(tag => tag.name === "throws" && tag.text.includes("RangeError")));
-  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.direction")));
+  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.axis")));
+  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.length")));
+  assert.match(extrude.signature, /axis\?: ReadonlyVec3/);
+  assert.match(extrude.signature, /length: number/);
+  assert.doesNotMatch(extrude.signature, /direction/);
   assert.ok(!api.entries.some(entry => entry.name === "triangulatePolygon"));
   assert.ok(!api.entries.find(entry => entry.name === "Memo").members.some(member => member.name === "triangulateUncached"));
   const node = api.entries.find(entry => entry.name === "Node");
@@ -65,13 +69,20 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.doesNotMatch(extrude.signature, /circleSegments/);
 });
 
-test("documentation folders distinguish constructors, shorthands, operations, and utilities", () => {
+test("documentation folders distinguish constructors, shorthands, operations, defaults, and utilities", () => {
   const folder = name => api.entries.find(entry => entry.name === name)?.folder;
   for (const name of ["Sketch", "Circle", "PlanarCurve", "PlanarLoop", "Point", "SketchElement"]) assert.equal(folder(name), "classes");
   for (const name of ["sketch", "circle", "transformMat4Node"]) assert.equal(folder(name), "shorthands");
   assert.equal(folder("extrude"), "operations");
   for (const name of ["functionalize", "transformMat4"]) assert.equal(folder(name), "util");
-  assert.ok(api.entries.every(entry => ["classes", "shorthands", "operations", "util"].includes(entry.folder)));
+  for (const name of ["XY", "ZX", "YZ", "X", "Y", "Z"]) {
+    const entry = api.entries.find(entry => entry.name === name);
+    assert.equal(entry.folder, "defaults");
+    assert.equal(entry.kind, "Constant");
+    assert.match(entry.signature, new RegExp(`const ${name}:`));
+    assert.match(entry.description, /Shared/);
+  }
+  assert.ok(api.entries.every(entry => ["classes", "shorthands", "operations", "defaults", "util"].includes(entry.folder)));
   assert.ok(api.libraries["file:///node_modules/libcompass/operations/extrude.d.ts"]);
 });
 
@@ -82,11 +93,11 @@ const center = { x: 0, y: 0 };
 const vertex = { position: [0, 0, 0] };
 const s = new Sketch({ plane: new Plane({ a: vertex }) });
 s.add(new Circle({ center, radius: 5 }));
-const solid = extrude({ sketch: s, direction: [0, 0, 10] });
+const solid = extrude({ sketch: s, length: 10 });
 scene.add(solid);
-s.extrude({ direction: [0, 0, 2] });
+s.extrude({ length: 2 });
 const draft = sketch({ plane: plane() }).add(circle({ center, radius: 2 }));
-scene.add(draft.extrude({ direction: [0, 0, 3] }));
+scene.add(draft.extrude({ length: 3 }));
 scene.add(node(), memo(), transformMat4Node({ matrix: mat4.create() }));
 sketch().add({ x: 1, y: 2 });
 const transform = new Transform().add(solid);
@@ -94,6 +105,12 @@ scene.add(transform);
 solid.refresh();
 scene.remove(new Node(), new Node());
 const vector = vec3.fromValues(1, 2, 3);
+const onXY = sketch({ plane: XY });
+const onZX = sketch({ plane: ZX });
+const onYZ = sketch({ plane: YZ });
+onYZ.add(circle({ center, radius: 2 })).extrude({ axis: X, length: -3 });
+const defaultAxes = vec3.cross([0, 0, 0], X, Y);
+const extrusionDirection = vec3.scale([0, 0, 0], Z, 10);
 const matrix = mat4.create();
 const SketchClass = Sketch;
 const rim = SpatialCurve.fromPlanarCurve({ curve: circle({ center, radius: 1 }) });

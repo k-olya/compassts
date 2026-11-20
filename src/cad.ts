@@ -30,7 +30,7 @@ s.add(
 );
 
 // Profile analysis uses polylines; the solid retains exact curves.
-const part = extrude({ sketch: s, direction: [0, 0, height] });
+const part = extrude({ sketch: s, length: height });
 scene.add(part);
 `;
 

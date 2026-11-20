@@ -55,6 +55,17 @@ export function readLibcompassApi() {
   const entries = Object.entries(libraries).flatMap(([path, content]) => {
     const source = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true);
     return source.statements.flatMap(node => {
+      if (ts.isVariableStatement(node)) {
+        return node.declarationList.declarations.flatMap(declaration => {
+          if (!ts.isIdentifier(declaration.name) || !exports.includes(declaration.name.text)) return [];
+          const statement = ts.factory.updateVariableStatement(node, node.modifiers,
+            ts.factory.updateVariableDeclarationList(node.declarationList, [declaration]));
+          return [{ name: declaration.name.text, folder: path.includes("/defaults/") ? "defaults" : "util",
+            kind: node.declarationList.flags & ts.NodeFlags.Const ? "Constant" : "Variable",
+            signature: printer.printNode(ts.EmitHint.Unspecified, statement, source).replace(/^export (?:declare )?/, ""),
+            ...documentation(node), members: [] }];
+        });
+      }
       if (!(ts.isClassDeclaration(node) || ts.isFunctionDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))
         || !node.name || !exports.includes(node.name.text)) return [];
       const signatureNode = ts.isClassDeclaration(node)
