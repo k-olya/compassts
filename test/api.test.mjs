@@ -35,7 +35,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
     assert.equal(entry.signature, `interface ${name}`);
     assert.ok(entry.members.every(member => member.name !== "constructor"));
   }
-  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialSurface"]) {
+  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialSurface", "ruledSurface"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Function");
     assert.match(entry.description, /shorthand for/);
@@ -54,6 +54,8 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   const plane = api.entries.find(entry => entry.name === "plane");
   assert.match(plane.signature, /options\?/);
   assert.match(plane.members.find(member => member.name === "options.a").description, /defaults to \[0, 0, 0\]/);
+  assert.match(api.entries.find(entry => entry.name === "extrudeAlongCurve").description, /smooth, regular spatial curve/);
+  assert.match(api.entries.find(entry => entry.name === "RuledSurface").signature, /extends SpatialSurface/);
   const spatialCurve = api.entries.find(entry => entry.name === "SpatialCurve");
   assert.ok(spatialCurve.members.some(member => member.name === "isLoop"));
   assert.match(spatialCurve.members.find(member => member.name === "fromPlanarCurve").signature, /curve: Pick<PlanarCurve/);
@@ -67,7 +69,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
     assert.ok(planarCurve.members.some(member => member.name === name));
   }
   assert.ok(!planarCurve.members.some(member => member.name === "intersects"));
-  assert.match(api.entries.find(entry => entry.name === "SpatialSurface").description, /exact ruled surface/);
+  assert.match(api.entries.find(entry => entry.name === "SpatialSurface").description, /general parametric spatial surface/);
   assert.match(api.entries.find(entry => entry.name === "Face").signature, /extends Surface/);
   assert.doesNotMatch(extrude.signature, /circleSegments/);
 });
@@ -77,6 +79,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   for (const name of ["Sketch", "Circle", "PlanarCurve", "PlanarLoop", "Point", "SketchElement"]) assert.equal(folder(name), "classes");
   for (const name of ["sketch", "circle", "transformMat4Node"]) assert.equal(folder(name), "shorthands");
   assert.equal(folder("extrude"), "operations");
+  assert.equal(folder("extrudeAlongCurve"), "operations");
   for (const name of ["functionalize", "transformMat4", "PI", "radtodeg", "degtorad"]) assert.equal(folder(name), "util");
   assert.equal(api.entries.find(entry => entry.name === "PI").kind, "Constant");
   assert.match(api.entries.find(entry => entry.name === "radtodeg").description, /radians to degrees/);
@@ -101,6 +104,10 @@ const angleRAD = degtorad(angleDEG);
 const vertex = { position: [0, 0, 0] };
 const s = new Sketch({ plane: new Plane({ a: vertex }) });
 s.add(new Circle({ center, radius: 5 }));
+const path = spatialCurve({ at: t => ({ position: [0, 0, t] }) });
+const swept = extrudeAlongCurve({ sketch: s, curve: path });
+s.extrudeAlongCurve({ curve: path });
+const generalSurface = spatialSurface({ at: (u, v) => ({ position: [u, v, u * v] }) });
 const solid = extrude({ sketch: s, length: 10, angle: 3 });
 scene.add(solid);
 s.extrude({ length: 2, angle: -5 });
@@ -140,8 +147,8 @@ const inside = planarLoop.contains({ point: center });
 const lifted = SpatialCurve.fromPlanarCurve({ curve: planar });
 const liftedFunction = SpatialCurve.fromPlanarCurve({ curve: { at: t => ({ x: t, y: t * t }) } });
 const parameters = liftedFunction.sampleParameters({ resolution: 0.001 });
-const wall = spatialSurface({ start: rim, end: topRim });
-const coneWall = spatialSurface({ start: rim, end: { position: [0, 0, 3] } });
+const wall = ruledSurface({ start: rim, end: topRim });
+const coneWall = ruledSurface({ start: rim, end: { position: [0, 0, 3] } });
 const sampled = rim.sample();
 const pointOnSurface = wall.at(0.25, 0.5);
 const loop = rim.isLoop();
@@ -173,9 +180,11 @@ const boundaries = solid.boundaries;`;
     const add = service.getQuickInfoAtPosition("/model.js", code.indexOf(".add") + 2);
     assert.match(ts.displayPartsToString(add.documentation), /Append entities/);
     assert.match(ts.displayPartsToString(add.displayParts), /SketchElement/);
-    const extrude = service.getQuickInfoAtPosition("/model.js", code.indexOf("extrude") + 1);
+    const extrude = service.getQuickInfoAtPosition("/model.js", code.indexOf("extrude({") + 1);
     assert.match(ts.displayPartsToString(extrude.documentation), /Extrude all filled sketch regions/);
     assert.ok(extrude.tags.some(tag => tag.name === "param"));
+    const sweep = service.getQuickInfoAtPosition("/model.js", code.indexOf("extrudeAlongCurve") + 1);
+    assert.match(ts.displayPartsToString(sweep.documentation), /smooth, regular spatial curve/);
     const remove = service.getQuickInfoAtPosition("/model.js", code.indexOf(".remove") + 2);
     assert.match(ts.displayPartsToString(remove.displayParts), /\.remove\(\.\.\.children: Node\[\]\)/);
     assert.match(ts.displayPartsToString(remove.documentation), /object identity/);

@@ -87,7 +87,7 @@ entries in the docs browser's Util folder.
 
 Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`
 (`Face` or `SpatialSurface`) and shared `boundaries` (`Edge` or `SpatialCurve`).
-Only rendering and STL export use triangles. The library-wide
+Sweeps also use a temporary mesh to check for invalid geometry. The library-wide
 `TRIANGULATION_RESOLUTION` is a `0.001` model-unit target for midpoint-to-chord
 deviation. Every curve uses the same adaptive midpoint sampling algorithm. `extrude` no longer takes
 `circleSegments`. `Circle` extends `PlanarCurve`, and every curve's `at(t)` uses
@@ -95,8 +95,21 @@ deviation. Every curve uses the same adaptive midpoint sampling algorithm. `extr
 `circle.at(angleRAD / (2 * PI))` for radians. All loop
 samples include the repeated closing point. `SpatialCurve.fromPlanarCurve({ curve,
 plane })` lifts any planar curve into world space without sampling, replacing
-`fromCircle`. `PlanarCurve`, `SpatialCurve`, `SpatialSurface`, their shorthands, and `SpatialBoundary` types
+`fromCircle`. `PlanarCurve`, `SpatialCurve`, `SpatialSurface`, `RuledSurface`, their shorthands, and `SpatialBoundary` types
 are included in the editor and documentation browser.
+
+`extrudeAlongCurve({ sketch: s, curve })` (also `s.extrudeAlongCurve({ curve })`)
+sweeps profiles along a smooth spatial curve. Local (0, 0) follows the path;
+its tangent sets the sketch normal, and the frame transports with minimal twist.
+Open paths have caps; smoothly closed paths have no caps or seam edges. Corners,
+cusps, folds, and detected self-intersections throw and appear in the console.
+Checks use the library resolution and cannot certify hidden oscillations.
+
+`SpatialSurface({ at, ... })` now supports general and periodic parametric
+surfaces. Use `RuledSurface({ start, end, ... })` or `ruledSurface(...)` for the
+previous rim/apex constructor. Surfaces expose physical `boundaryLoops`;
+`Face` retains `outer` and `holes`. Both new classes and `extrudeAlongCurve`
+appear automatically in Monaco and their respective docs folders.
 
 Curve lifting also accepts plain `at(t)` evaluators. The default `sample()` uses
 `sampleParameters({ resolution })`, starting with `[0, 0.5, 1]` and halving
