@@ -62,6 +62,15 @@ internally without modifying it, which defaults to the sketch plane normal.
 Use a negative length to extrude in the opposite
 direction, or pass an axis explicitly: `extrude({ sketch: s, axis: Z, length: -10 })`.
 
+Optional `angle` sets a constant wall draft in degrees: positive expands material
+and shrinks holes; negative contracts material and grows holes. It defaults to
+zero and keeps the same meaning for negative lengths. For example,
+`s.extrude({ length: 20, angle: -45 })` stops automatically at a cone tip
+if the profile reaches a point before length 20. The built-in plate example uses
+a small positive draft. Curves use `tangent(t)` with a numerical default and an
+optional exact evaluator or method override. Sharp curved joins, intersecting
+offsets, and collapses to a line currently report that offset trimming is needed.
+
 Constructors take named options objects, such as `new Circle({ center, radius })`
 and `new TransformMat4({ matrix })`. Their lowercase shorthands use the same
 options, for example `circle({ center, radius })` and `sketch()`. Use
@@ -70,13 +79,20 @@ remains the array utility. `Point` and `Vertex` are interfaces: use
 `{ x, y }` and `{ position: [x, y, z] }` literals. Their types and documentation
 are available to Monaco, including through JavaScript JSDoc annotations.
 
+`PI` is available globally as an alias for `Math.PI`. The Util helpers
+`radtodeg(angleRAD)` and `degtorad(angleDEG)` convert angles without wrapping them:
+`radtodeg(PI / 2)` is `90`, and `degtorad(45)` is `PI / 4`. The built-in example
+uses `angleDEG = 3` for its draft angle. `Transform.rotation` also uses degrees. All three also have Monaco tooltips and
+entries in the docs browser's Util folder.
+
 Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`
 (`Face` or `SpatialSurface`) and shared `boundaries` (`Edge` or `SpatialCurve`).
 Only rendering and STL export use triangles. The library-wide
 `TRIANGULATION_RESOLUTION` is a `0.001` model-unit target for midpoint-to-chord
 deviation. Every curve uses the same adaptive midpoint sampling algorithm. `extrude` no longer takes
 `circleSegments`. `Circle` extends `PlanarCurve`, and every curve's `at(t)` uses
-[0, 1]. Use `circle.at(angle / (2 * Math.PI))` to evaluate radians. All loop
+[0, 1]. Use `circle.at(angleDEG / 360)` for degrees or
+`circle.at(angleRAD / (2 * PI))` for radians. All loop
 samples include the repeated closing point. `SpatialCurve.fromPlanarCurve({ curve,
 plane })` lifts any planar curve into world space without sampling, replacing
 `fromCircle`. `PlanarCurve`, `SpatialCurve`, `SpatialSurface`, their shorthands, and `SpatialBoundary` types

@@ -18,8 +18,11 @@ test("the example evaluates into a Node scene using real libcompass geometry", (
   assert.notEqual(evaluateCode(DEFAULT_CODE).scene, result.scene);
 });
 
-test("render scopes isolate repeated declarations and expose gl-matrix", () => {
-  const source = "const m = mat4.create(); scene.add(new TransformMat4({ matrix: m }));";
+test("render scopes isolate repeated declarations and expose math globals", () => {
+  const source = `const m = mat4.create(); scene.add(new TransformMat4({ matrix: m }));
+    if (PI !== Math.PI || radtodeg(PI) !== 180 || degtorad(-90) !== -PI / 2) {
+      throw new Error("Incorrect angle globals");
+    }`;
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
 });
@@ -70,8 +73,9 @@ test("Zustand reports render errors, retains the last model, and recovers on suc
   assert.equal(logged.mock.callCount(), 1);
   assert.ok(logged.mock.calls[0].arguments[0] instanceof SyntaxError);
   const syntaxEntry = useCadStore.getState().consoleEntries[0];
-  assert.deepEqual(syntaxEntry.location, { line: 26, column: 1 });
-  assert.equal(syntaxEntry.stack, "at model.js:26:1");
+  const errorLine = DEFAULT_CODE.split("\n").findIndex(line => line === "scene.add(part);") + 1;
+  assert.deepEqual(syntaxEntry.location, { line: errorLine, column: 1 });
+  assert.equal(syntaxEntry.stack, `at model.js:${errorLine}:1`);
   assert.equal(useCadStore.getState().evaluationError, syntaxEntry);
   useCadStore.getState().setCode("throw new Error('bad model')");
   assert.equal(useCadStore.getState().evaluationError, null);

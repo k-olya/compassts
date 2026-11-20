@@ -12,6 +12,7 @@ export const DEFAULT_CODE = `// libcompass constructors, shorthands, and gl-matr
 const width = 100;
 const depth = 64;
 const height = 12;
+const angleDEG = 3; // Positive draft expands, negative contracts.
 
 const corners = [
   { x: -width / 2, y: -depth / 2 },
@@ -30,7 +31,7 @@ s.add(
 );
 
 // Profile analysis uses polylines; the solid retains exact curves.
-const part = extrude({ sketch: s, length: height });
+const part = extrude({ sketch: s, length: height, angle: angleDEG });
 scene.add(part);
 `;
 

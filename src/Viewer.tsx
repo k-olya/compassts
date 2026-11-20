@@ -120,7 +120,7 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
     setProjection.current = (orthographic) => guard(() => {
       const next = orthographic ? parallel : perspective;
       if (next === camera) return;
-      const halfFov = THREE.MathUtils.degToRad(perspective.fov / 2);
+      const halfFovRAD = THREE.MathUtils.degToRad(perspective.fov / 2);
       next.position.copy(camera.position);
       next.quaternion.copy(camera.quaternion);
       next.up.copy(camera.up);
@@ -128,10 +128,10 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       next.far = camera.far;
       if (orthographic) {
         // Match the perspective view's scale at the orbit target.
-        halfHeight = camera.position.distanceTo(controls.target) * Math.tan(halfFov);
+        halfHeight = camera.position.distanceTo(controls.target) * Math.tan(halfFovRAD);
         parallel.zoom = 1;
       } else {
-        const distance = halfHeight / parallel.zoom / Math.tan(halfFov);
+        const distance = halfHeight / parallel.zoom / Math.tan(halfFovRAD);
         next.position.sub(controls.target).setLength(distance).add(controls.target);
       }
       camera = next;
@@ -168,11 +168,11 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       mesh.geometry.computeBoundingBox();
       const { center, radius } = mesh.geometry.boundingSphere!;
       const size = Math.max(radius, 1);
-      const halfFov = THREE.MathUtils.degToRad(perspective.fov / 2);
-      const distance = size / Math.sin(Math.atan(Math.tan(halfFov) * Math.min(perspective.aspect, 1))) * 1.25;
+      const halfFovRAD = THREE.MathUtils.degToRad(perspective.fov / 2);
+      const distance = size / Math.sin(Math.atan(Math.tan(halfFovRAD) * Math.min(perspective.aspect, 1))) * 1.25;
       camera.near = size / 1000;
       camera.far = Math.max(size * 100, distance * 10);
-      halfHeight = distance * Math.tan(halfFov);
+      halfHeight = distance * Math.tan(halfFovRAD);
       parallel.zoom = 1;
       updateProjection();
       camera.position.copy(center).add(new THREE.Vector3(1.3, -1.7, 1.3).normalize().multiplyScalar(distance));

@@ -19,7 +19,10 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.length")));
   assert.match(extrude.signature, /axis\?: ReadonlyVec3/);
   assert.match(extrude.signature, /length: number/);
+  assert.match(extrude.signature, /angle\?: number/);
+  assert.ok(extrude.tags.some(tag => tag.name === "param" && tag.text.startsWith("options.angle") && tag.text.includes("degrees")));
   assert.doesNotMatch(extrude.signature, /direction/);
+  assert.match(api.entries.find(entry => entry.name === "Transform").members.find(member => member.name === "rotation").description, /degrees/);
   assert.ok(!api.entries.some(entry => entry.name === "triangulatePolygon"));
   assert.ok(!api.entries.find(entry => entry.name === "Memo").members.some(member => member.name === "triangulateUncached"));
   const node = api.entries.find(entry => entry.name === "Node");
@@ -74,7 +77,10 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   for (const name of ["Sketch", "Circle", "PlanarCurve", "PlanarLoop", "Point", "SketchElement"]) assert.equal(folder(name), "classes");
   for (const name of ["sketch", "circle", "transformMat4Node"]) assert.equal(folder(name), "shorthands");
   assert.equal(folder("extrude"), "operations");
-  for (const name of ["functionalize", "transformMat4"]) assert.equal(folder(name), "util");
+  for (const name of ["functionalize", "transformMat4", "PI", "radtodeg", "degtorad"]) assert.equal(folder(name), "util");
+  assert.equal(api.entries.find(entry => entry.name === "PI").kind, "Constant");
+  assert.match(api.entries.find(entry => entry.name === "radtodeg").description, /radians to degrees/);
+  assert.match(api.entries.find(entry => entry.name === "degtorad").description, /degrees to radians/);
   for (const name of ["XY", "ZX", "YZ", "X", "Y", "Z"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.folder, "defaults");
@@ -89,18 +95,21 @@ test("documentation folders distinguish constructors, shorthands, operations, de
 test("editor globals resolve libcompass and gl-matrix types and documentation", () => {
   const code = `/** @type {Point} */
 const center = { x: 0, y: 0 };
+const angleDEG = radtodeg(PI / 4);
+const angleRAD = degtorad(angleDEG);
 /** @type {Vertex} */
 const vertex = { position: [0, 0, 0] };
 const s = new Sketch({ plane: new Plane({ a: vertex }) });
 s.add(new Circle({ center, radius: 5 }));
-const solid = extrude({ sketch: s, length: 10 });
+const solid = extrude({ sketch: s, length: 10, angle: 3 });
 scene.add(solid);
-s.extrude({ length: 2 });
+s.extrude({ length: 2, angle: -5 });
 const draft = sketch({ plane: plane() }).add(circle({ center, radius: 2 }));
 scene.add(draft.extrude({ length: 3 }));
 scene.add(node(), memo(), transformMat4Node({ matrix: mat4.create() }));
 sketch().add({ x: 1, y: 2 });
 const transform = new Transform().add(solid);
+transform.rotation.z = 90;
 scene.add(transform);
 solid.refresh();
 scene.remove(new Node(), new Node());
@@ -117,6 +126,8 @@ const rim = SpatialCurve.fromPlanarCurve({ curve: circle({ center, radius: 1 }) 
 const topRim = SpatialCurve.fromPlanarCurve({ curve: circle({ center, radius: 1 }), plane: plane({ a: [0, 0, 3], b: [1, 0, 3], c: [0, 1, 3] }) });
 const quarterCircle = circle({ center, radius: 1 }).at(0.25);
 const localCurve = planarCurve({ at: t => ({ x: t, y: t * t }) });
+const exactTangentCurve = planarCurve({ at: t => ({ x: t, y: t * t }), tangent: t => [1, 2 * t] });
+const tangentDirection = exactTangentCurve.tangent(0.5);
 /** @type {SketchElement} */
 const sketchElement = localCurve;
 sketch().add(sketchElement);
@@ -130,6 +141,7 @@ const lifted = SpatialCurve.fromPlanarCurve({ curve: planar });
 const liftedFunction = SpatialCurve.fromPlanarCurve({ curve: { at: t => ({ x: t, y: t * t }) } });
 const parameters = liftedFunction.sampleParameters({ resolution: 0.001 });
 const wall = spatialSurface({ start: rim, end: topRim });
+const coneWall = spatialSurface({ start: rim, end: { position: [0, 0, 3] } });
 const sampled = rim.sample();
 const pointOnSurface = wall.at(0.25, 0.5);
 const loop = rim.isLoop();
