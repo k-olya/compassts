@@ -37,6 +37,15 @@ export function SweepIcon() {
   </ToolIcon>;
 }
 
+export function ChamferIcon() {
+  return <ToolIcon>
+    <path d="M3 8.5 11 4l6 3.5-8 4.5Z" fill="currentColor" fillOpacity="0.08" />
+    <path d="m9 12 8-4.5 4 4-8 4.5Z" fill="currentColor" fillOpacity="0.3" />
+    <path d="M3 8.5v9L13 23v-7m8-4.5v7L13 23" />
+    <path d="m17 2 5 3-2 2" opacity="0.4" strokeDasharray="1.5 2" />
+  </ToolIcon>;
+}
+
 export function SketchIcon() {
   return <ToolIcon>
     <path d="M12 5H3v16h15v-9" fill="currentColor" fillOpacity="0.06" />

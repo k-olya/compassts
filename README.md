@@ -5,7 +5,7 @@ left, inspect the model or API documentation on the right, and export binary STL
 Render and Export STL stay in the top menu.
 
 The left icon toolbar selects 3D or 2D code tools and opens the documentation
-browser. 3D tools insert `extrude` and `extrudeAlongCurve` calls; 2D tools insert
+browser. 3D tools insert `extrude`, `extrudeAlongCurve`, and `chamfer` calls; 2D tools insert
 `sketch`, `lineSegment`, and `planarCurve` calls. Each inserts an options template
 at the editor cursor, replacing the current selection. Tab / Shift+Tab move
 between editable values; Undo removes the insertion. Tools restore the editor
@@ -14,6 +14,16 @@ visible separators, and the tool section changes with the selected mode. The
 right toolbar's expand button hides or restores the editor without entering
 browser fullscreen. Editor contents, the camera, and the selected documentation
 page are preserved when switching views.
+
+The Chamfer tool inserts `chamfer({ solid: part, length: 0.5, angle: 45,
+boundaries: [] })`. Boundary indices refer to the original solid's `boundaries`
+array; an omitted or empty list selects all. The result is a new solid, so add
+it to the scene instead of the original. The instance form is
+`part.chamfer({ length: 0.5, angle: 45, boundaries: [] })`; `part.chamfer()` uses
+all defaults. Both forms return a new solid. Length is the setback on the first
+adjoining surface in `solid.surfaces` order, and angle is in degrees. Convex
+planar edges and smooth closed curved rims (including holes) are supported;
+unsupported corner or surface intersections report errors in the console.
 
 The book button in the left toolbar switches the right pane between the model
 and searchable libcompass API documentation, preserving both views' state.
@@ -74,7 +84,8 @@ if the profile reaches a point before length 20. The built-in plate example uses
 a small positive draft. Curves use `tangent(t)` with a numerical default and an
 optional exact evaluator or method override. Sharp curved joins, intersecting
 offsets, and collapses to a line currently report that offset trimming is needed.
-The default example also places a torus beside the plate using `extrudeAlongCurve`.
+The default example chamfers the plate's four hole rims (boundaries `4`, `5`,
+`10`, and `11`) using `.chamfer()` with its default length and angle.
 
 Constructors take named options objects, such as `new Circle({ center, radius })`
 and `new TransformMat4({ matrix })`. Their lowercase shorthands use the same

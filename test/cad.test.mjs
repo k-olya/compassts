@@ -7,15 +7,10 @@ import { useCadStore } from "../src/store.ts";
 test("the example evaluates into a Node scene using real libcompass geometry", () => {
   const result = evaluateCode(DEFAULT_CODE);
   assert.ok(result.scene instanceof Node);
-  assert.equal(result.scene.children.length, 2);
+  assert.equal(result.scene.children.length, 1);
   assert.ok(result.scene.children[0] instanceof Solid);
-  assert.equal(result.scene.children[0].surfaces.length, 8);
-  assert.equal(result.scene.children[0].boundaries.length, 16);
-  const torus = result.scene.children[1];
-  assert.ok(torus instanceof Solid);
-  assert.equal(torus.surfaces.length, 1);
-  assert.equal(torus.boundaries.length, 0);
-  assert.ok(torus.surfaces[0].periodicU && torus.surfaces[0].periodicV);
+  assert.equal(result.scene.children[0].surfaces.length, 12);
+  assert.equal(result.scene.children[0].boundaries.length, 20);
   assert.ok(!DEFAULT_CODE.includes("circleSegments"));
   assert.ok(result.positions.length > 0);
   assert.equal(result.positions.length % 9, 0);
@@ -73,6 +68,19 @@ test("editor scripts can add and remove multiple child objects", () => {
   assert.equal(result.scene.children.length, 1);
   assert.equal(result.positions.length / 9, 4 * (new Circle({ center: { x: 0, y: 0 }, radius: 5 }).sample().length - 1) - 4);
   assert.equal(Math.max(...result.positions), 20);
+});
+
+test("chamfer is a script global that returns a new solid while preserving its input", () => {
+  const rendered = evaluateCode(`
+const source = extrude({ sketch: sketch().add(circle({ center: { x: 0, y: 0 }, radius: 5 })), length: 10 });
+const before = source.triangulate();
+const part = chamfer({ solid: source, length: 0.5, angle: 45, boundaries: [] });
+if (part === source || source.triangulate() !== before || source.surfaces.length !== 3) throw new Error('Input was changed');
+if (!part.surfaces.some(surface => surface instanceof TrimmedSurface)) throw new Error('Surface was not trimmed');
+scene.add(part);`);
+  assert.equal(rendered.scene.children.length, 1);
+  assert.equal(rendered.scene.children[0].surfaces.length, 5);
+  assert.ok(rendered.positions.length > 0);
 });
 
 test("invalid code, invalid scenes, and invalid geometry report errors", () => {

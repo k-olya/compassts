@@ -4,7 +4,7 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { ExtrudeIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon } from "./ToolIcons.tsx";
+import { ChamferIcon, ExtrudeIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -18,6 +18,10 @@ const toolSections = {
     {
       label: "Extrude along curve", Icon: SweepIcon,
       snippet: "extrudeAlongCurve({\n  sketch: ${1:s},\n  curve: ${2:path},\n})$0",
+    },
+    {
+      label: "Chamfer", Icon: ChamferIcon,
+      snippet: "chamfer({\n  solid: ${1:part},\n  length: ${2:0.5},\n  angle: ${3:45},\n  boundaries: ${4:[]},\n})$0",
     },
   ],
   "2d": [
