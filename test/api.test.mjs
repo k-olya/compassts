@@ -81,7 +81,21 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(folder("extrude"), "operations");
   assert.equal(folder("extrudeAlongCurve"), "operations");
   assert.equal(folder("chamfer"), "operations");
+  for (const name of ["trimCurve", "trimSurface"]) {
+    assert.equal(folder(name), "operations");
+    const entry = api.entries.find(entry => entry.name === name);
+    assert.ok(entry.members.some(member => member.name === "options.keep" && member.description));
+    assert.ok(entry.tags.some(tag => tag.name === "example"));
+    assert.ok(api.libraries[`file:///node_modules/libcompass/operations/${name}.d.ts`]);
+  }
   assert.equal(folder("TrimmedSurface"), "classes");
+  for (const name of ["intersect", "difference", "extrudeCut"]) {
+    const entry = api.entries.find(entry => entry.name === name);
+    assert.equal(entry.folder, "operations");
+    assert.ok(entry.members.some(member => member.name === "options.solid" && member.description));
+    assert.ok(entry.tags.some(tag => tag.name === "example"));
+    assert.ok(api.entries.find(entry => entry.name === "Solid").members.some(member => member.name === name && member.description));
+  }
   assert.equal(folder("trimmedSurface"), "shorthands");
   const chamfer = api.entries.find(entry => entry.name === "chamfer");
   assert.match(chamfer.description, /new solid/);
@@ -125,6 +139,16 @@ const solid = extrude({ sketch: s, length: 10, angle: 3 });
 const beveled = chamfer({ solid, length: 0.5, angle: 45, boundaries: [0] });
 const beveledByMethod = solid.chamfer({ length: 0.5, angle: 45, boundaries: [0] });
 const defaultBeveled = solid.chamfer();
+const common = intersect({ solid, tool: swept });
+const removed = difference({ solid, tool: swept });
+const cutExtrusion = extrudeCut({ solid, sketch: s, length: -3, axis: Z, angle: 2 });
+const commonMethod = solid.intersect({ tool: swept });
+const removedMethod = solid.difference({ tool: swept });
+const cutMethod = solid.extrudeCut({ sketch: s, length: 3, axis: Z, angle: -2 });
+const cutCurve = trimCurve({ curve: circle({ center, radius: 5 }), cutters: [line({ point: center, direction: [0, 1] })], keep: 0 });
+const cutPath = trimCurve({ curve: path, cutters: [XY], keep: 0.5 });
+const cutSurfaces = trimSurface({ surface: solid.surfaces[0], cutter: YZ, keep: "positive" });
+const cutByCurve = trimSurface({ surface: solid.surfaces[0], cutter: circle({ center, radius: 2 }), keep: "outside" });
 const trim = trimmedSurface({ surface: generalSurface, at: (u, v) => ({ x: u, y: v }), boundaryLoops: [], sides: {} });
 const originalParameters = trim.parameters(0.5, 0.5);
 scene.add(solid);

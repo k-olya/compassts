@@ -4,7 +4,7 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { ChamferIcon, ExtrudeIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon } from "./ToolIcons.tsx";
+import { ChamferIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -16,12 +16,32 @@ const toolSections = {
       snippet: "extrude({\n  sketch: ${1:s},\n  length: ${2:10},\n  axis: ${3:Z},\n  angle: ${4:0},\n})$0",
     },
     {
+      label: "Extrude cut", Icon: ExtrudeCutIcon,
+      snippet: "extrudeCut({\n  solid: ${1:part},\n  sketch: ${2:s},\n  length: ${3:10},\n  axis: ${4:Z},\n  angle: ${5:0},\n})$0",
+    },
+    {
       label: "Extrude along curve", Icon: SweepIcon,
       snippet: "extrudeAlongCurve({\n  sketch: ${1:s},\n  curve: ${2:path},\n})$0",
     },
     {
       label: "Chamfer", Icon: ChamferIcon,
       snippet: "chamfer({\n  solid: ${1:part},\n  length: ${2:0.5},\n  angle: ${3:45},\n  boundaries: ${4:[]},\n})$0",
+    },
+    {
+      label: "Intersect", Icon: IntersectIcon,
+      snippet: "intersect({\n  solid: ${1:part},\n  tool: ${2:cutter},\n})$0",
+    },
+    {
+      label: "Difference", Icon: DifferenceIcon,
+      snippet: "difference({\n  solid: ${1:part},\n  tool: ${2:cutter},\n})$0",
+    },
+    {
+      label: "Trim curve", Icon: TrimCurveIcon,
+      snippet: "trimCurve({\n  curve: ${1:path},\n  cutters: [${2:XY}],\n  keep: ${3:0.5},\n})$0",
+    },
+    {
+      label: "Trim surface", Icon: TrimSurfaceIcon,
+      snippet: "trimSurface({\n  surface: ${1:part.surfaces[0]},\n  cutter: ${2:YZ},\n  keep: \"${3|positive,negative|}\",\n})$0",
     },
   ],
   "2d": [
@@ -36,6 +56,10 @@ const toolSections = {
     {
       label: "Planar curve", Icon: PlanarCurveIcon,
       snippet: "planarCurve({\n  at: t => ({\n    x: ${1:10} * t,\n    y: ${2:10} * t * t,\n  }),\n})$0",
+    },
+    {
+      label: "Trim curve", Icon: TrimCurveIcon,
+      snippet: "trimCurve({\n  curve: ${1:curve},\n  cutters: [line({ point: { x: ${2:0}, y: ${3:0} }, direction: [${4:0}, ${5:1}] })],\n  keep: ${6:0.5},\n})$0",
     },
   ],
 };

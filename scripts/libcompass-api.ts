@@ -77,7 +77,7 @@ export function readLibcompassApi() {
         ? node.members.map(member => ({ member, prefix: "" }))
         : ts.isFunctionDeclaration(node) ? node.parameters.flatMap(parameter =>
           parameter.type && ts.isTypeLiteralNode(parameter.type)
-            ? parameter.type.members.map(member => ({ member, prefix: `${parameter.name.getText(source)}.` })) : []) : [];
+            ? parameter.type.members.map(member => ({ member, prefix: `${ts.isObjectBindingPattern(parameter.name) ? "options" : parameter.name.getText(source)}.` })) : []) : [];
       const members = documentedMembers.flatMap(({ member, prefix }) => {
         if (ts.getCombinedModifierFlags(member) & (ts.ModifierFlags.Private | ts.ModifierFlags.Protected)) return [];
         return [{

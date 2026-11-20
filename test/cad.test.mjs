@@ -27,6 +27,38 @@ test("render scopes isolate repeated declarations and expose math globals", () =
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
 });
 
+test("trimming operations are script globals and render retained exact surfaces", () => {
+  const result = evaluateCode(`const arc = trimCurve({
+    curve: circle({ center: { x: 0, y: 0 }, radius: 5 }),
+    cutters: [line({ point: { x: 0, y: 0 }, direction: [0, 1] })], keep: 0,
+  });
+  const part = sketch().add(arc, lineSegment({ start: arc.end, end: arc.start })).extrude({ length: 3 });
+  const patches = trimSurface({ surface: part.surfaces[0],
+    cutter: plane({ a: [2, 0, 0], b: [2, 1, 0], c: [2, 0, 1] }), keep: "positive" });
+  scene.add(solid({ surfaces: patches }));`);
+  assert.equal(result.scene.children.length, 1);
+  assert.ok(result.positions.length > 0);
+  for (let i = 0; i < result.positions.length; i += 3) assert.ok(result.positions[i] >= 2 - 1e-6);
+});
+
+test("boolean operations and Solid methods are script globals and render their exact results", () => {
+  const result = evaluateCode(`const corners = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }];
+  const base = sketch().add(...corners.map((start, i) => lineSegment({ start, end: corners[(i + 1) % 4] })));
+  const part = base.extrude({ length: 5 });
+  const hole = sketch().add(circle({ center: { x: 5, y: 5 }, radius: 1 }));
+  const cutter = hole.extrude({ length: 7 });
+  const common = intersect({ solid: part, tool: cutter });
+  const cut = part.difference({ tool: cutter });
+  const drilled = extrudeCut({ solid: part, sketch: hole, length: 7 });
+  const cutByMethod = part.extrudeCut({ sketch: hole, length: 7 });
+  const commonByMethod = part.intersect({ tool: cutter });
+  const cutByFunction = difference({ solid: part, tool: cutter });
+  scene.add(common, cut, drilled, cutByMethod, commonByMethod, cutByFunction);`);
+  assert.equal(result.scene.children.length, 6);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
 test("resolution changes rerun the model, update script globals, and enforce bounds", () => {
   const original = useCadStore.getState();
   try {

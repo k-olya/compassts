@@ -5,8 +5,9 @@ left, inspect the model or API documentation on the right, and export binary STL
 Render and Export STL stay in the top menu.
 
 The left icon toolbar selects 3D or 2D code tools and opens the documentation
-browser. 3D tools insert `extrude`, `extrudeAlongCurve`, and `chamfer` calls; 2D tools insert
-`sketch`, `lineSegment`, and `planarCurve` calls. Each inserts an options template
+browser. 3D tools insert `extrude`, `extrudeAlongCurve`, `extrudeCut`, `chamfer`,
+`intersect`, `difference`, `trimCurve`, and `trimSurface` calls; 2D tools insert
+`sketch`, `lineSegment`, `planarCurve`, and `trimCurve` calls. Each inserts an options template
 at the editor cursor, replacing the current selection. Tab / Shift+Tab move
 between editable values; Undo removes the insertion. Tools restore the editor
 when it is hidden and leave rendering to the Render button. Toolbar sections have
@@ -24,6 +25,33 @@ all defaults. Both forms return a new solid. Length is the setback on the first
 adjoining surface in `solid.surfaces` order, and angle is in degrees. Convex
 planar edges and smooth closed curved rims (including holes) are supported;
 unsupported corner or surface intersections report errors in the console.
+
+Trim curve inserts `trimCurve({ curve, cutters: [...], keep: 0.5 })`: retain the
+piece containing the original normalized `keep` parameter. Its 2D template uses
+a cutting line, and its 3D template uses a world-space plane. Trim surface inserts
+`trimSurface({ surface: part.surfaces[0], cutter: YZ, keep: "positive" })`;
+Tab lets you choose positive/negative. It returns retained surface patches, which
+can be displayed with `scene.add(solid({ surfaces: patches }))`. Closed curve
+cutters on planar faces use that face's local XY coordinates and inside/outside
+selection. Curved surfaces currently support plane cuts forming one continuous
+transverse rail, as on an obliquely cut cylinder wall. Cuts requiring several
+charts and curved cutters on spatial surfaces throw; surface trimming does not
+cap or cut a whole solid. Full options and limitations appear under Operations
+in the docs and in Monaco tooltips.
+
+Intersect inserts `intersect({ solid: part, tool: cutter })`; Difference inserts
+`difference({ solid: part, tool: cutter })`. Their Solid methods are
+`part.intersect({ tool: cutter })` and `part.difference({ tool: cutter })`.
+Extrude cut inserts `extrudeCut({ solid: part, sketch: s, length: 10, axis: Z,
+angle: 0 })`, also available as `part.extrudeCut({ sketch, length, axis, angle })`.
+It extrudes the sketch normally, then subtracts that solid; choose placement,
+signed length, and degree draft angle for a blind or through cut. All return new
+solids and preserve the inputs. Only own surfaces participate; child nodes from
+the first operand are retained unchanged. Empty intersections have no surfaces.
+Planar and supported single-rail curved/plane intersections are supported;
+general curved surface/surface intersections, curved coincidence, multi-chart
+trims, or unresolved sewing report explicit console errors. Outputs retain exact
+surface equations and shared topology, with mesh checks used only for analysis.
 
 The book button in the left toolbar switches the right pane between the model
 and searchable libcompass API documentation, preserving both views' state.
