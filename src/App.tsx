@@ -4,7 +4,7 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -105,7 +105,16 @@ const toolSections = {
       snippet: "trimSurface({\n  surface: ${1:part.surfaces[0]},\n  cutter: ${2:YZ},\n  keep: \"${3|positive,negative|}\",\n})$0",
     },
   ],
-  arrays: [],
+  arrays: [
+    {
+      label: "Displacement array", Icon: DisplacementArrayIcon,
+      snippet: "displacementArray({\n  object: ${1:part},\n  vector: [${2:1}, ${3:0}, ${4:0}],\n  ${5|N: 4\\, offset: 10,N: 4\\, width: 40,offset: 10\\, width: 40|},\n})$0",
+    },
+    {
+      label: "Rotation array", Icon: RotationArrayIcon,
+      snippet: "rotationArray({\n  object: ${1:part},\n  axis: ${2:Z},\n  ${3|N: 8,offset: 45,N: 4\\, offset: 30,N: 4\\, width: 180,offset: 30\\, width: 180|},\n})$0",
+    },
+  ],
   helpers: [
     {
       label: "Spatial line", Icon: SpatialLineIcon,

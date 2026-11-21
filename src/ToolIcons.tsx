@@ -51,6 +51,23 @@ export function HelpersIcon() {
   </ToolIcon>;
 }
 
+export function DisplacementArrayIcon() {
+  return <ToolIcon>
+    <rect x="2" y="9" width="5" height="6" rx="0.5" fill="currentColor" fillOpacity="0.2" />
+    <rect x="9.5" y="9" width="5" height="6" rx="0.5" />
+    <rect x="17" y="9" width="5" height="6" rx="0.5" />
+    <path d="M4.5 20h15m-2-2 2 2-2 2M4.5 4h15" opacity="0.5" />
+  </ToolIcon>;
+}
+
+export function RotationArrayIcon() {
+  return <ToolIcon>
+    <path d="M14 4a8 8 0 0 1 3 2m3 4a8 8 0 0 1 0 4m-3 4a8 8 0 0 1-3 2m-4 0a8 8 0 0 1-3-2m-3-4a8 8 0 0 1 0-4m3-4a8 8 0 0 1 3-2" opacity="0.45" />
+    <path d="M10 2h4v4h-4ZM17 6h4v4h-4ZM17 14h4v4h-4ZM10 18h4v4h-4ZM3 14h4v4H3ZM3 6h4v4H3Z" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" fillOpacity="0.2" />
+  </ToolIcon>;
+}
+
 export function ExtrudeIcon() {
   return <ToolIcon>
     <path d="m2 10 6.5-3.5L15 10l-6.5 3.5Z" fill="currentColor" fillOpacity="0.2" />

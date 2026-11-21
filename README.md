@@ -10,7 +10,8 @@ surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
 `trimCurve` calls. Solid tools insert `extrude`,
 `extrudeAlongCurve`, `extrudeCut`, `chamfer`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
-`trimSurface`. Helpers contains Spatial line, Plane, Rotate, and Displace; Arrays is currently empty. Each tool inserts an options
+`trimSurface`. Helpers contains Spatial line, Plane, Rotate, and Displace; Arrays
+contains Displacement array and Rotation array. Each tool inserts an options
 template at the editor cursor, replacing the current selection. Tab / Shift+Tab
 move between editable values; Undo removes the insertion. Tools restore the
 editor when it is hidden and leave rendering to the Render button. Toolbar
@@ -26,6 +27,10 @@ corresponding rectangle function), ready to use inside a sketch’s `add(...)` c
 takes `points` and an optional `loop` boolean (default false); `rectangle` takes
 opposite `start`/`end` corners; `centerRectangle` takes `center`/`corner`. Rectangles
 align to the sketch's local axes. These are generators, without separate classes.
+`Sketch.add` also accepts the returned arrays directly: `s.add(centerRectangle({ center, corner }))`.
+Both `Sketch.add` and `Node.add` accept a mix of individual objects and readonly
+arrays, flattening array arguments one level in order without modifying inputs.
+Passing arrays directly avoids function argument limits when adding many objects.
 
 The Helpers category inserts `spatialLine({ direction, origin })`, `plane({ a, b, c })`,
 `rotate({ object, axis, angle })`, and `displace({ object, vector })` option templates.
@@ -42,6 +47,23 @@ The same transformations are available as `.rotate({ axis, angle })` and
 For example, `part.rotate({ axis: Z, angle: 45 }).displace({ vector: [10, 0, 0] })`
 returns a new solid and supports further modeling operations. These methods and
 their parameter docs are available to Monaco.
+
+The Arrays category inserts `displacementArray({ object, vector, N, offset, width })`
+or `rotationArray({ object, axis, N, offset, width })`. The final snippet choice
+selects which parameters to supply: exactly two of `N`, `offset`, `width`, with
+rotation also accepting only `N` or only `offset` for a full circle. Spacing is
+in model units along a normalized vector for displacement, or signed degrees
+around a spatial line for rotation. `width = N * offset`; width 10 and offset 5
+make two copies, at 0 and 5. Computed counts round down for non-divisible widths.
+Each result includes a fresh zero-offset copy and excludes the width endpoint.
+Nested array targets are flattened into one output array, allowing grids and
+repeated groups to be added directly to the scene. Spatial lines remain intact:
+
+```js
+const row = displacementArray({ object: part, vector: X, N: 4, offset: 10 });
+const grid = displacementArray({ object: row, vector: Y, N: 3, offset: 10 });
+scene.add(grid);
+```
 
 The Ellipse tool inserts `ellipse({ center, radiusX, radiusY, rotation })`.
 The radii are positive semi-axis lengths, and rotation is counterclockwise in
@@ -110,8 +132,8 @@ documentation links open the folder containing their target. Operations such as
 `functionalize` and the packed-coordinate `transformMat4`. Folder assignment
 follows libcompass's `src/operations/`, `src/defaults/`, and `src/util/` structure;
 internal geometry helpers are not part of the public docs. Defaults include
-origin planes `XY`, `ZX`, `YZ` and unit spatial lines `X`, `Y`, `Z` (all with zero
-origins), available directly
+origin planes `XY`, `ZX`, `YZ`, unit spatial lines `X`, `Y`, `Z` (all with zero
+origins), `center` (the Point `{ x: 0, y: 0 }`), and `origin` (the vec3 `[0, 0, 0]`), available directly
 in scripts and Monaco tooltips. Plane letters give local axis order; the normals
 are +Z, +Y, and +X respectively. Treat shared defaults as immutable.
 Signatures, TSDoc, parameters, and examples are generated from libcompass source

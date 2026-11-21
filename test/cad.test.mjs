@@ -26,7 +26,12 @@ test("render scopes isolate repeated declarations and expose math globals", () =
     }
     if (PI !== Math.PI || radtodeg(PI) !== 180 || degtorad(-90) !== -PI / 2) {
       throw new Error("Incorrect angle globals");
-    }`;
+    }
+    if (center.x !== 0 || center.y !== 0 || !vec3.exactEquals(origin, [0, 0, 0])) {
+      throw new Error("Incorrect center/origin globals");
+    }
+    circle({ center, radius: 1 });
+    spatialLine({ direction: Z, origin });`;
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
 });
@@ -35,7 +40,7 @@ test("planar segment generators are script globals that produce extrudable profi
   const result = evaluateCode(`
     scene.add(sketch().add(...polyline({ points: [{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 2, y: 3 }], loop: true })).extrude({ length: 2 }));
     scene.add(sketch().add(...rectangle({ start: { x: 10, y: 0 }, end: { x: 14, y: 3 } })).extrude({ length: 2 }));
-    scene.add(sketch().add(...centerRectangle({ center: { x: 20, y: 0 }, corner: { x: 22, y: 3 } })).extrude({ length: 2 }));
+    scene.add(sketch().add(centerRectangle({ center: { x: 0, y: 0 }, corner: { x: 1, y: 2 } })).extrude({ length: 2 }));
   `);
   assert.equal(result.scene.children.length, 3);
   assert.deepEqual(result.scene.children.map(part => part.surfaces.length), [5, 6, 6]);
@@ -54,6 +59,22 @@ test("spatial lines and nonmutating rigid transforms are script globals", () => 
     scene.add(source, moved);
   `);
   assert.equal(result.scene.children.length, 2);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
+test("geometry arrays flatten nested solid groups for direct scene insertion", () => {
+  const result = evaluateCode(`
+    const part = sketch().add(circle({ center: { x: 4, y: 0 }, radius: 1 })).extrude({ length: 2 });
+    const row = displacementArray({ object: part, vector: [10, 0, 0], width: 10, offset: 5 });
+    const grid = displacementArray({ object: row, vector: Y, N: 3, offset: 5 });
+    scene.add(grid);
+    const rings = rotationArray({ object: row, axis: Z, N: 4 });
+    scene.add(rings[0], rings.slice(1));
+    if (grid.length !== 6 || rings.length !== 8) throw new Error("Invalid flat array size");
+    if (grid[0] === part || rings[0] === row[0]) throw new Error("Array reused source objects");
+  `);
+  assert.equal(result.scene.children.length, 14);
   assert.ok(result.positions.length > 0);
   assert.ok(result.positions.every(Number.isFinite));
 });

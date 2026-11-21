@@ -26,7 +26,8 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.ok(!api.entries.some(entry => entry.name === "triangulatePolygon"));
   assert.ok(!api.entries.find(entry => entry.name === "Memo").members.some(member => member.name === "triangulateUncached"));
   const node = api.entries.find(entry => entry.name === "Node");
-  assert.match(node.members.find(member => member.name === "add").signature, /add\(\.\.\.children: Node\[\]\): this/);
+  assert.match(node.members.find(member => member.name === "add").signature, /add\(\.\.\.children: \(Node \| readonly Node\[\]\)\[\]\): this/);
+  assert.match(sketch.members.find(member => member.name === "add").signature, /readonly SketchElement\[\]/);
   assert.match(node.members.find(member => member.name === "remove").description, /object identity/);
   assert.match(api.entries.find(entry => entry.name === "Solid").signature, /extends Memo/);
   for (const name of ["Point", "Vertex", "SpatialBoundary", "PlanarLoop", "SurfaceTrim", "SurfaceRegionChart"]) {
@@ -110,6 +111,15 @@ test("documentation folders distinguish constructors, shorthands, operations, de
     assert.ok(entry.members.some(member => member.name === "options.object" && member.description));
     assert.match(entry.description, /new object/);
   }
+  for (const name of ["displacementArray", "rotationArray"]) {
+    assert.equal(folder(name), "operations");
+    const entry = api.entries.find(entry => entry.name === name);
+    assert.match(entry.signature, /ArrayCopy<T>\[\]/);
+    assert.deepEqual(entry.members.map(member => member.name), ["options.object", name === "displacementArray" ? "options.vector" : "options.axis", "options.N", "options.offset", "options.width"]);
+    assert.ok(entry.members.every(member => member.description));
+    assert.ok(entry.tags.some(tag => tag.name === "example"));
+    assert.ok(api.libraries[`file:///node_modules/libcompass/operations/${name}.d.ts`]);
+  }
   assert.match(api.entries.find(entry => entry.name === "SpatialLine").signature, /extends Array<number>/);
   for (const name of ["X", "Y", "Z"]) assert.match(api.entries.find(entry => entry.name === name).signature, /SpatialLine/);
   assert.equal(folder("arc"), "operations");
@@ -150,7 +160,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(api.entries.find(entry => entry.name === "PI").kind, "Constant");
   assert.match(api.entries.find(entry => entry.name === "radtodeg").description, /radians to degrees/);
   assert.match(api.entries.find(entry => entry.name === "degtorad").description, /degrees to radians/);
-  for (const name of ["XY", "ZX", "YZ", "X", "Y", "Z"]) {
+  for (const name of ["XY", "ZX", "YZ", "X", "Y", "Z", "center", "origin"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.folder, "defaults");
     assert.equal(entry.kind, "Constant");
@@ -163,7 +173,8 @@ test("documentation folders distinguish constructors, shorthands, operations, de
 
 test("editor globals resolve libcompass and gl-matrix types and documentation", () => {
   const code = `/** @type {Point} */
-const center = { x: 0, y: 0 };
+const localCenter = center;
+const axisAtOrigin = spatialLine({ direction: Z, origin });
 const angleDEG = radtodeg(PI / 4);
 const angleRAD = degtorad(angleDEG);
 setTriangulationResolution(0.1);
@@ -182,7 +193,8 @@ sketch().add(arcByAngle, arcByCenter, arcThroughPoint, arcByCenterAngle);
 const polygon = polyline({ points: [center, { x: 5, y: 0 }, { x: 5, y: 5 }], loop: true });
 const rect = rectangle({ start: center, end: { x: 10, y: 5 } });
 const centeredRect = centerRectangle({ center, corner: { x: 3, y: 2 } });
-sketch().add(...polygon, ...rect, ...centeredRect);
+sketch().add(polygon, rect, centeredRect, center);
+sketch().add(Object.freeze(rect));
 const path = spatialCurve({ at: t => ({ position: [0, 0, t] }) });
 const swept = extrudeAlongCurve({ sketch: s, curve: path });
 s.extrudeAlongCurve({ curve: path });
@@ -234,6 +246,25 @@ const facePlane = chainedFace.plane;
 const chainedSurface = generalSurface.rotate({ axis, angle: 90 }).displace({ vector });
 const chainedTrim = trim.rotate({ axis: Z, angle: 10 }).displace({ vector });
 const retainedUV = chainedTrim.parameters(0.5, 0.5);
+const row = displacementArray({ object: solid, vector: X, N: 4, offset: 10 });
+const grid = displacementArray({ object: row, vector: Y, N: 3, width: 30 });
+scene.add(grid);
+const ring = rotationArray({ object: solid, axis: Z, N: 8 });
+scene.add(Object.freeze(ring), node());
+const turnedGrid = rotationArray({ object: grid, axis: Z, offset: 90 });
+const repeatedSolid = turnedGrid[23].chamfer();
+const deeplyNested = displacementArray({ object: [[solid], [[solid]]], vector: X, N: 2, offset: 10 });
+const flattenedSolid = deeplyNested[3].chamfer();
+/** @type {ArrayTarget} */
+const dynamicTarget = [solid, [[solid]]];
+const dynamicCopies = rotationArray({ object: dynamicTarget, axis: Z, N: 2 });
+const dynamicMoved = dynamicCopies[0].displace({ vector: X });
+const repeatedLines = displacementArray({ object: Z, vector: X, width: 10, offset: 5 });
+const lineOrigin = repeatedLines[1].origin;
+const faceArray = rotationArray({ object: chainedFace, axis: Z, N: 2, width: 180 });
+const retainedPlane = faceArray[0].plane;
+const readonlyPlanes = displacementArray({ object: Object.freeze([XY, ZX]), vector: Y, N: 2, offset: 10 });
+const normalOfCopy = readonlyPlanes[1].normal;
 const movedOrigin = movedAxis.origin;
 const planeNormal = turnedPlane.normal;
 scene.add(movedSolid);
