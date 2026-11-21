@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { TRIANGULATION_RESOLUTION, setTriangulationResolution } from "libcompass";
-import { DEFAULT_CODE, evaluateCode, exportBinaryStl, type RenderedScene } from "./cad.ts";
+import { DEFAULT_CODE, evaluateCode, exportBinaryStl, type RenderedMesh, type RenderedScene } from "./cad.ts";
 import { errorEntry, type ConsoleEntry } from "./script-console.ts";
 
 interface CadState {
@@ -16,7 +16,7 @@ interface CadState {
   reportRendererError: (error: unknown) => void;
   setCode: (code: string) => void;
   render: () => void;
-  exportStl: () => void;
+  exportStl: (mesh?: RenderedMesh) => void;
 }
 
 let activeRun = 0;
@@ -56,13 +56,14 @@ export const useCadStore = create<CadState>((set, get) => ({
         evaluationError: get().consoleEntries.at(-1) ?? null });
     }
   },
-  exportStl: () => {
+  exportStl: (mesh) => {
     try {
-      const data = exportBinaryStl(get().rendered.positions);
+      const data = exportBinaryStl(mesh?.positions ?? get().rendered.positions);
       const url = URL.createObjectURL(new Blob([data], { type: "model/stl" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = "compass.stl";
+      const name = (mesh?.name.trim() || 'mesh').replace(/[\\/:*?"<>|]/g, '_').replace(/\.stl$/i, '');
+      link.download = mesh ? `${name}.stl` : "compass.stl";
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) {

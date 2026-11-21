@@ -10,7 +10,7 @@ surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
 `trimCurve` calls. Solid tools insert `extrude`,
 `extrudeAlongCurve`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
-`trimSurface`. Helpers contains Spatial line, Plane, Rotate, and Displace; Arrays
+`trimSurface`. Helpers contains Annotate, Spatial line, Plane, Rotate, and Displace; Arrays
 contains Displacement array and Rotation array. Each tool inserts an options
 template at the editor cursor, replacing the current selection. Tab / Shift+Tab
 move between editable values; Undo removes the insertion. Tools restore the
@@ -33,7 +33,8 @@ arrays, flattening array arguments one level in order without modifying inputs.
 Passing arrays directly avoids function argument limits when adding many objects.
 
 The Helpers category inserts `spatialLine({ direction, origin })`, `plane({ a, b, c })`,
-`rotate({ object, axis, angle })`, and `displace({ object, vector })` option templates.
+`rotate({ object, axis, angle })`, `displace({ object, vector })`, and
+`annotate({ solid, name, color, alpha })` option templates.
 SpatialLine is a vec3-compatible direction array with a copied origin (default
 zero); X/Y/Z are zero-origin unit lines. Extrusion uses the direction only.
 Rotate uses signed degrees around a spatial line, including its origin. Displace
@@ -41,6 +42,47 @@ uses the supplied XYZ vector without normalizing it. Both return new planes,
 spatial curves/lines, edges, solids, or surfaces, preserving their mathematical
 geometry and shared topology. Solid child geometry moves under new lazy transform
 nodes without changing source nodes or memo caches.
+
+Annotate wraps the original solid in a new `AnnotatedNode`, a `Memo` group with
+display properties. The method form is `part.annotate({ name, color, alpha })`.
+For general groups, use `new AnnotatedNode(options).add(...)` or
+`annotatedNode(options).add(...)`. Names default to `mesh1`, `mesh2`, ... via a
+hidden counter that increments only for successful unnamed constructions.
+Explicit names leave the counter unchanged. Color defaults to `'default'`
+(the original gold, `#d2a568`), and alpha defaults to `1`, ranging from `0`
+(invisible) to `1` (opaque).
+
+```js
+scene.add(part.annotate({ name: 'Housing', color: '#5599dd', alpha: 0.6 }));
+scene.add(part.annotate({ color: 'blue' })); // Automatic name, opaque theme blue.
+```
+
+The immutable `colors` palette contains 16 named constants: `default`, `red`,
+`orange`, `amber`, `yellow`, `lime`, `green`, `teal`, `cyan`, `blue`, `indigo`,
+`violet`, `purple`, `pink`, `rose`, and `gray`. Use either `color: 'blue'` or
+`color: colors.blue`. Custom colors must be `#RGB` or `#RRGGBB` strings;
+arbitrary CSS names/functions, numbers, and alpha-bearing hex strings throw.
+`node.color` returns the resolved hex string. The Annotate tool offers palette
+choices and inserts `name: undefined` to use the automatic name.
+
+The viewer traverses the scene and creates a separate named Three.js mesh for
+each nonempty annotated subtree. Nested annotations use their own settings and
+are excluded from the ancestor mesh; plain descendants use the nearest annotation.
+Other geometry retains the default material. Transforms and repeated node
+occurrences keep their placements, and edge outlines follow the mesh opacity.
+The full triangulation remains available for triangle counts and STL export,
+including alpha-zero geometry, with unchanged coordinates. Geometry cache edits
+still require refreshing affected memo nodes and ancestors; changing annotations
+alone does not require rebuilding geometry.
+
+Hover a visible annotated mesh to highlight it and its edges. Right-click it to open
+a menu showing its name and an Export STL action. Exporting there downloads only
+that mesh's last-rendered triangles, with its name as the filename and its
+world-space coordinates preserved. Nested annotated meshes remain separate.
+Unannotated geometry shares the default mesh and has no hover effect or context menu.
+Fully transparent meshes, edge overlays, and the grid are excluded from picking.
+Right-drag continues to pan. Escape, an outside click, navigation, or a new render
+closes the menu. The top Export STL button still exports the entire scene.
 
 The same transformations are available as `.rotate({ axis, angle })` and
 `.displace({ vector })` on each supported class, including inherited surface types.
@@ -115,13 +157,13 @@ adjoining surface in `solid.surfaces` order, and angle is in degrees. Convex
 planar edges and smooth closed curved rims (including holes) are supported;
 unsupported corner or surface intersections report errors in the console.
 
-Chamfer and Round boundary lists can mix original indices, boundary objects,
+Chamfer and Round accept one boundary selector or a mixed list of original indices, boundary objects,
 planar `Face` objects from the solid (selecting their outer and hole boundaries),
 and predicates `({ solid, face, boundary }) => boolean`. Predicates test each
 adjoining planar face; any match includes the boundary. They run once with
 `face: undefined` for a boundary adjoining only curved surfaces. Matches are
 deduplicated by identity. The shared `searchBoundaries({ solid, boundaries })`
-helper is also available in scripts and the docs browser. A nonempty list with
+helper accepts the same selections and is available in scripts and the docs browser. A selector or nonempty list with
 no matches leaves the geometry unchanged in a new solid; omitted or empty
 lists still select all. Objects from other solids are rejected.
 
@@ -212,12 +254,13 @@ Optional `angle` sets a constant wall draft in degrees: positive expands materia
 and shrinks holes; negative contracts material and grows holes. It defaults to
 zero and keeps the same meaning for negative lengths. For example,
 `s.extrude({ length: 20, angle: -45 })` stops automatically at a cone tip
-if the profile reaches a point before length 20. The built-in plate example uses
-a small positive draft. Curves use `tangent(t)` with a numerical default and an
+if the profile reaches a point before length 20. Curves use `tangent(t)` with a numerical default and an
 optional exact evaluator or method override. Sharp curved joins, intersecting
 offsets, and collapses to a line currently report that offset trimming is needed.
-The default example chamfers the plate's four hole rims (boundaries `4`, `5`,
-`10`, and `11`) using `.chamfer()` with its default length and angle.
+The default example extrudes a centered rectangle with two circular holes, then
+chamfers its four hole rims using
+`.chamfer({ boundaries: ({ boundary }) => boundary.isLoop() })` with the default
+length and angle.
 
 Constructors take named options objects, such as `new Circle({ center, radius })`
 and `new TransformMat4({ matrix })`. Their lowercase shorthands use the same
@@ -229,8 +272,8 @@ are available to Monaco, including through JavaScript JSDoc annotations.
 
 `PI` is available globally as an alias for `Math.PI`. The Util helpers
 `radtodeg(angleRAD)` and `degtorad(angleDEG)` convert angles without wrapping them:
-`radtodeg(PI / 2)` is `90`, and `degtorad(45)` is `PI / 4`. The built-in example
-uses `angleDEG = 3` for its draft angle. `Transform.rotation` also uses degrees. All three also have Monaco tooltips and
+`radtodeg(PI / 2)` is `90`, and `degtorad(45)` is `PI / 4`.
+`Transform.rotation` also uses degrees. All three also have Monaco tooltips and
 entries in the docs browser's Util folder.
 
 Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`

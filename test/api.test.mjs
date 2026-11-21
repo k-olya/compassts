@@ -36,7 +36,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
     assert.equal(entry.signature, `interface ${name}`);
     assert.ok(entry.members.every(member => member.name !== "constructor"));
   }
-  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialLine", "spatialSurface", "ruledSurface", "surfaceRegion"]) {
+  for (const name of ["node", "memo", "annotatedNode", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialLine", "spatialSurface", "ruledSurface", "surfaceRegion"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Function");
     assert.match(entry.description, /shorthand for/);
@@ -88,6 +88,22 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.match(api.entries.find(entry => entry.name === "SpatialSurface").description, /general parametric spatial surface/);
   assert.match(api.entries.find(entry => entry.name === "Face").signature, /extends Surface/);
   assert.doesNotMatch(extrude.signature, /circleSegments/);
+  const annotation = api.entries.find(entry => entry.name === "AnnotatedNode");
+  assert.match(annotation.signature, /extends Memo/);
+  for (const name of ["name", "color", "alpha"]) assert.ok(annotation.members.some(member => member.name === name && member.description));
+  const annotate = api.entries.find(entry => entry.name === "annotate");
+  assert.equal(annotate.folder, "operations");
+  assert.match(annotate.signature, /solid: Solid/);
+  assert.match(annotate.signature, /AnnotatedNode/);
+  assert.doesNotMatch(annotate.signature, /node: Node/);
+  assert.ok(annotate.members.every(member => member.description));
+  assert.match(annotate.signature, /color\?: AnnotationColor/);
+  const palette = api.entries.find(entry => entry.name === "colors");
+  assert.equal(palette.folder, "defaults");
+  assert.equal(palette.kind, "Constant");
+  assert.match(palette.signature, /default: "#d2a568"/);
+  assert.match(api.entries.find(entry => entry.name === "AnnotationColor").signature, /keyof typeof colors/);
+  assert.match(api.entries.find(entry => entry.name === "Solid").members.find(member => member.name === "annotate").signature, /: AnnotatedNode/);
 });
 
 test("documentation folders distinguish constructors, shorthands, operations, defaults, and utilities", () => {
@@ -166,8 +182,8 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(folder("trimmedSurface"), "shorthands");
   const chamfer = api.entries.find(entry => entry.name === "chamfer");
   assert.match(chamfer.description, /new solid/);
-  assert.match(chamfer.signature, /boundaries\?: readonly BoundarySelector\[\]/);
-  assert.match(round.signature, /boundaries\?: readonly BoundarySelector\[\]/);
+  assert.match(chamfer.signature, /boundaries\?: BoundarySelector \| readonly BoundarySelector\[\]/);
+  assert.match(round.signature, /boundaries\?: BoundarySelector \| readonly BoundarySelector\[\]/);
   const search = api.entries.find(entry => entry.name === "searchBoundaries");
   assert.equal(search.folder, "operations");
   assert.match(search.signature, /SpatialBoundary\[\]/);
@@ -233,6 +249,16 @@ const defaultBeveled = solid.chamfer();
 const rounded = round({ solid, radius: 0.5, boundaries: [0] });
 const roundedByMethod = solid.round({ radius: 0.5, boundaries: [0] });
 const defaultRounded = solid.round();
+const annotatedByOperation = annotate({ solid, name: "Part", color: "#33aaff", alpha: 0.5 });
+const annotatedByMethod = solid.annotate({ name: "Part", color: "blue", alpha: 0.5 });
+const paletteAnnotation = solid.annotate({ color: colors.green });
+/** @type {AnnotationColor} */
+const namedColor = "default";
+const defaultPaletteAnnotation = solid.annotate({ color: namedColor });
+const defaultAnnotation = solid.annotate();
+const annotationGroup = new AnnotatedNode({ name: "Group", color: "red", alpha: 1 }).add(solid);
+const annotationShorthand = annotatedNode({ name: "Group" }).add(solid, [solid]);
+scene.add(annotatedByOperation, annotatedByMethod, defaultAnnotation, annotationGroup, annotationShorthand);
 const cap = solid.surfaces.find(surface => surface instanceof Face);
 if (cap) {
   const chosen = searchBoundaries({ solid, boundaries: [0, solid.boundaries[0], cap,
@@ -244,6 +270,16 @@ if (cap) {
   chamfer({ solid, boundaries: [cap, 0] });
 }
 const curvedJoins = searchBoundaries({ solid, boundaries: [({ face }) => face === undefined] });
+const directIndex = searchBoundaries({ solid, boundaries: 0 });
+const directBoundary = searchBoundaries({ solid, boundaries: solid.boundaries[0] });
+const directPredicate = searchBoundaries({ solid, boundaries: ({ boundary }) => boundary.isLoop() });
+const chamferLoops = solid.chamfer({ boundaries: ({ boundary }) => boundary.isLoop() });
+const roundedBoundary = round({ solid, boundaries: solid.boundaries[0] });
+if (cap) {
+  searchBoundaries({ solid, boundaries: cap });
+  chamfer({ solid, boundaries: cap });
+  solid.round({ boundaries: cap });
+}
 const common = intersect({ solid, tool: swept });
 const removed = difference({ solid, tool: swept });
 const cutExtrusion = extrudeCut({ solid, sketch: s, length: -3, axis: Z, angle: 2 });

@@ -332,6 +332,34 @@ test("binary STL exports exactly the triangles and coordinates in the preview", 
   }
 });
 
+test("mesh STL downloads use only the selected transformed mesh and a filename based on its name", async (t) => {
+  const originalDocument = globalThis.document, downloads = [], blobs = new Map();
+  globalThis.document = { createElement: () => ({ click() { downloads.push({ name: this.download, blob: blobs.get(this.href) }); } }) };
+  t.after(() => { if (originalDocument === undefined) delete globalThis.document; else globalThis.document = originalDocument; });
+  t.mock.method(URL, "createObjectURL", blob => { const url = `blob:export-${blobs.size}`; blobs.set(url, blob); return url; });
+  t.mock.method(URL, "revokeObjectURL", () => {});
+  t.mock.method(globalThis, "setTimeout", callback => { callback(); return 0; });
+  const store = () => useCadStore.getState();
+  store().setCode(`
+const part = sketch().add(centerRectangle({ center, corner: { x: 1, y: 2 } })).extrude({ length: 3 });
+scene.add(part.displace({ vector: [10, 20, 30] }).annotate({ name: "Left:arm/part", color: "blue", alpha: 0.5 }));
+scene.add(part.displace({ vector: [-10, 0, 0] }).annotate({ name: "Other", color: "red" }));
+`);
+  store().render();
+  const rendered = store().rendered, selected = rendered.meshes[0];
+  store().exportStl(selected);
+  store().exportStl();
+  assert.deepEqual(downloads.map(file => file.name), ["Left_arm_part.stl", "compass.stl"]);
+  for (const [i, positions] of [selected.positions, rendered.positions].entries()) {
+    const data = new DataView(await downloads[i].blob.arrayBuffer());
+    assert.equal(data.getUint32(80, true), positions.length / 9);
+    assert.equal(data.byteLength, 84 + positions.length / 9 * 50);
+    for (let triangle = 0; triangle < positions.length / 9; triangle++) for (let coordinate = 0; coordinate < 9; coordinate++) {
+      assert.equal(data.getFloat32(84 + triangle * 50 + 12 + coordinate * 4, true), positions[triangle * 9 + coordinate]);
+    }
+  }
+});
+
 test("Zustand reports render errors, retains the last model, and recovers on success", (t) => {
   const logged = t.mock.method(console, "error", () => {});
   const original = useCadStore.getState().rendered;

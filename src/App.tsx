@@ -4,7 +4,7 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { AnnotateIcon, DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -125,6 +125,10 @@ const toolSections = {
   ],
   helpers: [
     {
+      label: "Annotate", Icon: AnnotateIcon,
+      snippet: "annotate({\n  solid: ${1:part},\n  name: ${2:undefined},\n  color: \"${3|default,red,orange,amber,yellow,lime,green,teal,cyan,blue,indigo,violet,purple,pink,rose,gray|}\",\n  alpha: ${4:1},\n})$0",
+    },
+    {
       label: "Spatial line", Icon: SpatialLineIcon,
       snippet: "spatialLine({\n  direction: [${1:0}, ${2:0}, ${3:1}],\n  origin: [${4:0}, ${5:0}, ${6:0}],\n})$0",
     },
@@ -173,7 +177,7 @@ export default function App() {
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11L13 8z" /></svg>
             Render
           </button>
-          <button className="export-button" onClick={exportStl} disabled={!triangles} title="Export the last successfully rendered model">
+          <button className="export-button" onClick={() => exportStl()} disabled={!triangles} title="Export the last successfully rendered model">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M8 1v9m-3-3 3 3 3-3M2 10v4h12v-4" /></svg>
             Export STL
           </button>

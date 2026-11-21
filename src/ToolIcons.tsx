@@ -51,6 +51,15 @@ export function HelpersIcon() {
   </ToolIcon>;
 }
 
+export function AnnotateIcon() {
+  return <ToolIcon>
+    <path d="m3 7 7-4 7 4-7 4Z" fill="currentColor" fillOpacity="0.12" />
+    <path d="M3 7v8l7 4v-8m7-4v3" />
+    <path d="M14 12h6l2 4-6 6-6-6Z" fill="currentColor" fillOpacity="0.2" />
+    <circle cx="17.5" cy="15" r="0.8" fill="currentColor" />
+  </ToolIcon>;
+}
+
 export function DisplacementArrayIcon() {
   return <ToolIcon>
     <rect x="2" y="9" width="5" height="6" rx="0.5" fill="currentColor" fillOpacity="0.2" />

@@ -12,34 +12,71 @@ export const DEFAULT_CODE = `// libcompass constructors, shorthands, and gl-matr
 const width = 100;
 const depth = 64;
 const height = 12;
-const angleDEG = 3; // Positive draft expands, negative contracts.
 
-const corners = [
-  { x: -width / 2, y: -depth / 2 },
-  { x: width / 2, y: -depth / 2 },
-  { x: width / 2, y: depth / 2 },
-  { x: -width / 2, y: depth / 2 },
-];
-
+// start by creating a 2d sketch
 const s = sketch();
-s.add(...corners.map((point, i) =>
-  lineSegment({ start: point, end: corners[(i + 1) % corners.length] })
-));
+s.add(centerRectangle({ center, corner: { x: width / 2, y: depth / 2} }));
 s.add(
   circle({ center: { x: -28, y: 0 }, radius: 10 }),
   circle({ center: { x: 28, y: 0 }, radius: 10 }),
 );
 
-// Profile analysis uses polylines; the solid retains exact curves.
-const part = extrude({ sketch: s, length: height, angle: angleDEG })
-  .chamfer({ boundaries: [4, 5, 10, 11] });
+// create a 3d solid by extruding the sketch
+const part = extrude({ sketch: s, length: height })
+  .chamfer({ boundaries: ({ boundary }) => boundary.isLoop() });
+
+// part will not be rendered unless you call scene.add()
 scene.add(part);
 `;
 
 export interface RenderedScene {
   scene: Node;
   positions: Float32Array;
+  meshes: RenderedMesh[];
   source: string;
+}
+
+export interface RenderedMesh {
+  positions: Float32Array;
+  annotated: boolean;
+  name: string;
+  color: `#${string}`;
+  alpha: number;
+}
+
+/** Partition the completed world-space triangulation, preserving all ancestor transforms. */
+function collectMeshes(scene: Node, positions: Float32Array): RenderedMesh[] {
+  if (!positions.length) return [];
+  const annotated = (node: Node): boolean => node instanceof compass.AnnotatedNode || node.children.some(annotated);
+  if (!annotated(scene)) return [{ positions: positions.slice(), annotated: false, name: '', color: compass.colors.default, alpha: 1 }];
+  type Batch = { annotation?: compass.AnnotatedNode; ranges: { start: number; length: number }[] };
+  const fallback: Batch = { ranges: [] }, batches = [fallback];
+  const visit = (node: Node, start: number, length: number, batch: Batch) => {
+    if (node instanceof compass.AnnotatedNode) {
+      batch = { annotation: node, ranges: [] };
+      batches.push(batch);
+    }
+    // Standard nodes keep own triangles first, then each child's triangles in order.
+    // Slicing the final array also retains transforms whose geometry is memoized.
+    const lengths = node.children.map(child => child.triangulate().length);
+    const own = length - lengths.reduce((sum, size) => sum + size, 0);
+    if (own < 0 || own % 9 || lengths.some(size => size % 9)) {
+      throw new RangeError('Scene nodes must retain own triangles followed by child triangles; refresh affected memoized ancestors after edits');
+    }
+    if (own) batch.ranges.push({ start, length: own });
+    let offset = start + own;
+    node.children.forEach((child, i) => { visit(child, offset, lengths[i], batch); offset += lengths[i]; });
+  };
+  visit(scene, 0, positions.length, fallback);
+  return batches.filter(batch => batch.ranges.length).map(({ annotation, ranges }) => {
+    const mesh = new Float32Array(ranges.reduce((sum, range) => sum + range.length, 0));
+    let offset = 0;
+    for (const range of ranges) {
+      mesh.set(positions.subarray(range.start, range.start + range.length), offset);
+      offset += range.length;
+    }
+    return { positions: mesh, annotated: annotation !== undefined, name: annotation?.name ?? '', color: annotation?.color ?? compass.colors.default, alpha: annotation?.alpha ?? 1 };
+  });
 }
 
 export function evaluateCode(source: string, output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION): RenderedScene {
@@ -71,7 +108,7 @@ export function evaluateCode(source: string, output?: ConsoleOutput, resolution 
     if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
       throw new TypeError("scene.triangulate() must return finite XYZ triangle positions in a Float32Array.");
     }
-    return { scene, positions: positions.slice(), source };
+    return { scene, positions: positions.slice(), meshes: collectMeshes(scene, positions), source };
   } catch (error) {
     output?.(errorEntry(error, syntaxLocation));
     throw error;
