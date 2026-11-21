@@ -86,6 +86,29 @@ scene.add(part.round({ radius: 10 }));`);
   }
 });
 
+test("boundary search and mixed chamfer/round selectors work in editor scripts", () => {
+  const result = evaluateCode(`
+const part = sketch().add(circle({ center, radius: 2 })).extrude({ length: 4 });
+const cap = part.surfaces.find(surface => surface instanceof Face);
+const rim = cap.outer[0];
+const index = part.boundaries.indexOf(rim);
+const selected = searchBoundaries({ solid: part, boundaries: [index, rim, cap,
+  ({ solid, face, boundary }) => solid === part && face === cap && boundary === rim,
+] });
+if (selected.length !== 1 || selected[0] !== rim) throw new Error('Mixed selectors were not deduplicated');
+scene.add(part.chamfer({ boundaries: [cap, ...selected] }));
+scene.add(round({ solid: part, boundaries: [index, rim, cap, ({ face }) => face === cap] }));
+const unchanged = part.round({ boundaries: [() => false] });
+if (unchanged === part || unchanged.surfaces.some((surface, i) => surface !== part.surfaces[i])) throw new Error('Empty match changed geometry');
+const sphere = part.round({ radius: 2 });
+const curved = searchBoundaries({ solid: sphere, boundaries: [({ face }) => face === undefined] });
+if (curved.length !== sphere.boundaries.length) throw new Error('Missing curved-only boundaries');
+`);
+  assert.equal(result.scene.children.length, 2);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
 test("spatial lines and nonmutating rigid transforms are script globals", () => {
   const result = evaluateCode(`
     if (!(X instanceof SpatialLine) || Z.origin.some(value => value !== 0)) throw new Error("Invalid default axes");

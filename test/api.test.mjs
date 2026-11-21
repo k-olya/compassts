@@ -166,7 +166,14 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(folder("trimmedSurface"), "shorthands");
   const chamfer = api.entries.find(entry => entry.name === "chamfer");
   assert.match(chamfer.description, /new solid/);
-  assert.match(chamfer.signature, /boundaries\?: readonly number\[\]/);
+  assert.match(chamfer.signature, /boundaries\?: readonly BoundarySelector\[\]/);
+  assert.match(round.signature, /boundaries\?: readonly BoundarySelector\[\]/);
+  const search = api.entries.find(entry => entry.name === "searchBoundaries");
+  assert.equal(search.folder, "operations");
+  assert.match(search.signature, /SpatialBoundary\[\]/);
+  assert.ok(search.members.some(member => member.name === "options.boundaries" && member.description));
+  assert.match(api.entries.find(entry => entry.name === "BoundarySelector").signature, /number \| SpatialBoundary \| Face \| BoundaryPredicate/);
+  assert.match(api.entries.find(entry => entry.name === "BoundaryPredicate").signature, /face: Face \| undefined/);
   assert.ok(chamfer.tags.some(tag => tag.name === "param" && tag.text.includes("defaults to 0.5")));
   const solidChamfer = api.entries.find(entry => entry.name === "Solid").members.find(member => member.name === "chamfer");
   assert.match(solidChamfer.description, /new chamfered solid/);
@@ -226,6 +233,17 @@ const defaultBeveled = solid.chamfer();
 const rounded = round({ solid, radius: 0.5, boundaries: [0] });
 const roundedByMethod = solid.round({ radius: 0.5, boundaries: [0] });
 const defaultRounded = solid.round();
+const cap = solid.surfaces.find(surface => surface instanceof Face);
+if (cap) {
+  const chosen = searchBoundaries({ solid, boundaries: [0, solid.boundaries[0], cap,
+    ({ solid: input, face, boundary }) => input === solid && face !== undefined && face.boundaries.includes(boundary),
+  ] });
+  const mixedBevel = solid.chamfer({ boundaries: [cap, ...chosen] });
+  const mixedRound = round({ solid, boundaries: [solid.boundaries[0], ({ face }) => face === cap] });
+  solid.round({ boundaries: [cap] });
+  chamfer({ solid, boundaries: [cap, 0] });
+}
+const curvedJoins = searchBoundaries({ solid, boundaries: [({ face }) => face === undefined] });
 const common = intersect({ solid, tool: swept });
 const removed = difference({ solid, tool: swept });
 const cutExtrusion = extrudeCut({ solid, sketch: s, length: -3, axis: Z, angle: 2 });

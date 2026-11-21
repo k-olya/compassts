@@ -99,7 +99,7 @@ rounded into a sphere. This can change boundary indices for affected profiles.
 
 The Round tool inserts `round({ solid: part, radius: 0.5, boundaries: [] })`.
 It creates a new solid with tangent constant-radius rounds; `part.round(options)`
-is the method form. Empty boundary indices select every original boundary.
+is the method form. An omitted or empty boundary list selects every original boundary.
 Rounds remain mathematical surfaces, including spherical corners. At the radius
 limit, consumed faces disappear so cylinders can become spheres, hollow cylinders
 can become tori, and four parallel cube rounds can become a cylinder. Unresolved
@@ -114,6 +114,16 @@ all defaults. Both forms return a new solid. Length is the setback on the first
 adjoining surface in `solid.surfaces` order, and angle is in degrees. Convex
 planar edges and smooth closed curved rims (including holes) are supported;
 unsupported corner or surface intersections report errors in the console.
+
+Chamfer and Round boundary lists can mix original indices, boundary objects,
+planar `Face` objects from the solid (selecting their outer and hole boundaries),
+and predicates `({ solid, face, boundary }) => boolean`. Predicates test each
+adjoining planar face; any match includes the boundary. They run once with
+`face: undefined` for a boundary adjoining only curved surfaces. Matches are
+deduplicated by identity. The shared `searchBoundaries({ solid, boundaries })`
+helper is also available in scripts and the docs browser. A nonempty list with
+no matches leaves the geometry unchanged in a new solid; omitted or empty
+lists still select all. Objects from other solids are rejected.
 
 Trim curve inserts `trimCurve({ curve, cutters: [...], keep: 0.5 })`: retain the
 piece containing the original normalized `keep` parameter. Its 2D template uses
