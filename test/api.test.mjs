@@ -100,6 +100,13 @@ test("documentation folders distinguish constructors, shorthands, operations, de
     assert.match(entry.signature, /LineSegment\[\]/);
     assert.ok(entry.members.every(member => member.name.startsWith("options.") && member.description));
   }
+  assert.equal(folder("roundPolyline"), "operations");
+  const roundPolyline = api.entries.find(entry => entry.name === "roundPolyline");
+  assert.match(roundPolyline.signature, /LineSegment \| PlanarCurve/);
+  assert.ok(roundPolyline.members.some(member => member.name === "options.segments" && member.description));
+  assert.ok(roundPolyline.members.some(member => member.name === "options.radius" && member.description));
+  assert.ok(roundPolyline.tags.some(tag => tag.name === "example"));
+  assert.ok(api.libraries["file:///node_modules/libcompass/operations/roundPolyline.d.ts"]);
   assert.equal(folder("ellipse"), "operations");
   const ellipseEntry = api.entries.find(entry => entry.name === "ellipse");
   assert.match(ellipseEntry.signature, /PlanarCurve/);
@@ -204,6 +211,8 @@ sketch().add(arcByAngle, arcByCenter, arcThroughPoint, arcByCenterAngle);
 const polygon = polyline({ points: [center, { x: 5, y: 0 }, { x: 5, y: 5 }], loop: true });
 const rect = rectangle({ start: center, end: { x: 10, y: 5 } });
 const centeredRect = centerRectangle({ center, corner: { x: 3, y: 2 } });
+const roundedProfile = roundPolyline({ segments: rect, radius: 0.5 });
+sketch().add(roundedProfile);
 sketch().add(polygon, rect, centeredRect, center);
 sketch().add(Object.freeze(rect));
 const path = spatialCurve({ at: t => ({ position: [0, 0, t] }) });

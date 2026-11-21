@@ -4,7 +4,7 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -33,6 +33,10 @@ const toolSections = {
     {
       label: "Polyline", Icon: PolylineIcon,
       snippet: "...polyline({\n  points: [\n    { x: ${1:0}, y: ${2:0} },\n    { x: ${3:10}, y: ${4:0} },\n    { x: ${5:10}, y: ${6:10} },\n  ],\n  loop: ${7|true,false|},\n})$0",
+    },
+    {
+      label: "Round polyline", Icon: RoundPolylineIcon,
+      snippet: "...roundPolyline({\n  segments: ${1:segments},\n  radius: ${2:0.5},\n})$0",
     },
     {
       label: "Rectangle", Icon: RectangleIcon,

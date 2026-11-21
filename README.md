@@ -6,7 +6,7 @@ Render and Export STL stay in the top menu.
 
 The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
 surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
-`polyline`, `rectangle`, `centerRectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
+`polyline`, `roundPolyline`, `rectangle`, `centerRectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
 `trimCurve` calls. Solid tools insert `extrude`,
 `extrudeAlongCurve`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
@@ -82,6 +82,15 @@ through those three points and chooses the arc passing through the middle point;
 collinear points or a conflicting explicit direction throw. Major arcs are
 supported in all forms. It returns an exact
 `PlanarCurve`; use a closing line or other curves when building a filled profile.
+
+The 2D Round polyline tool inserts `...roundPolyline({ segments, radius: 0.5 })`.
+It returns trimmed line segments and tangent circular arcs without changing the
+source segments. Endpoints connect by exact XY coordinates, so segment order and
+direction may vary. Open ends and missing segments are allowed; unshared endpoints
+stay unchanged. A point shared by more than two segments or a segment too short
+for its incident rounds produces an error. Straight joins stay straight. At the
+radius limit, fully consumed segments disappear and adjoining arcs share the same
+point. Pass the array directly to `s.add(...)`, or spread it into an element list.
 
 The Round tool inserts `round({ solid: part, radius: 0.5, boundaries: [] })`.
 It creates a new solid with tangent constant-radius rounds; `part.round(options)`

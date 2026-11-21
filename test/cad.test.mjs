@@ -52,6 +52,19 @@ test("planar segment generators are script globals that produce extrudable profi
   assert.ok(result.positions.every(Number.isFinite));
 });
 
+test("roundPolyline is a script global producing extrudable tangent arcs without changing its input", () => {
+  const result = evaluateCode(`
+const segments = rectangle({ start: { x: -1, y: -1 }, end: { x: 1, y: 1 } });
+const before = JSON.stringify(segments);
+const rounded = roundPolyline({ segments, radius: 1 });
+if (JSON.stringify(segments) !== before) throw new Error('Source polyline was modified');
+if (rounded.length !== 4 || !rounded.every(element => element instanceof PlanarCurve)) throw new Error('Not a circular profile');
+scene.add(sketch().add(rounded).extrude({ length: 2 }));`);
+  assert.equal(result.scene.children.length, 1);
+  assert.equal(result.scene.children[0].surfaces.length, 6);
+  assert.ok(result.positions.length > 0);
+});
+
 test("spatial lines and nonmutating rigid transforms are script globals", () => {
   const result = evaluateCode(`
     if (!(X instanceof SpatialLine) || Z.origin.some(value => value !== 0)) throw new Error("Invalid default axes");
@@ -240,6 +253,17 @@ if (sphere.surfaces.length !== 2 || otherSphere.surfaces.length !== 2) throw new
 scene.add(sphere);`);
   assert.equal(rendered.scene.children.length, 1);
   assert.ok(rendered.positions.length > 0);
+});
+
+test("opposite cube rounds render at the limiting radius for bottom and wall boundary selections", () => {
+  for (const [radius, boundaries, surfaces] of [[10, [0, 2], 7], [9.9, [0, 2], 8], [10, [8, 9], 7]]) {
+    const result = evaluateCode(`
+const rect = centerRectangle({ center, corner: { x: 10, y: 10 } });
+const part3 = sketch().add(rect).extrude({ length: 20 });
+scene.add(part3.round({ radius: ${radius}, boundaries: ${JSON.stringify(boundaries)} }));`);
+    assert.equal(result.scene.children[0].surfaces.length, surfaces);
+    assert.ok(result.positions.length > 0);
+  }
 });
 
 test("invalid code, invalid scenes, and invalid geometry report errors", () => {

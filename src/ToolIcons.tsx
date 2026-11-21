@@ -207,6 +207,17 @@ export function PolylineIcon() {
   </ToolIcon>;
 }
 
+export function RoundPolylineIcon() {
+  return <ToolIcon>
+    <path d="M4 20V4h16" opacity="0.4" strokeDasharray="2 2" />
+    <path d="M4 20v-6A10 10 0 0 1 14 4h6" strokeWidth="1.75" />
+    <path d="m14 14-7-7" opacity="0.5" />
+    <circle cx="14" cy="14" r="1" fill="currentColor" />
+    <circle cx="4" cy="20" r="1.5" fill="currentColor" />
+    <circle cx="20" cy="4" r="1.5" fill="currentColor" />
+  </ToolIcon>;
+}
+
 export function RectangleIcon() {
   return <ToolIcon>
     <path d="M4 6h16v12H4Z" fill="currentColor" fillOpacity="0.08" />
