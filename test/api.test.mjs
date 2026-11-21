@@ -121,7 +121,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
     assert.ok(api.libraries[`file:///node_modules/libcompass/operations/${name}.d.ts`]);
   }
   assert.match(api.entries.find(entry => entry.name === "SpatialLine").signature, /extends Array<number>/);
-  for (const name of ["X", "Y", "Z"]) assert.match(api.entries.find(entry => entry.name === name).signature, /SpatialLine/);
+  for (const name of ["X", "Y", "Z", "negX", "negY", "negZ"]) assert.match(api.entries.find(entry => entry.name === name).signature, /SpatialLine/);
   assert.equal(folder("arc"), "operations");
   const arcEntry = api.entries.find(entry => entry.name === "arc");
   assert.match(arcEntry.signature, /PlanarCurve/);
@@ -169,7 +169,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(api.entries.find(entry => entry.name === "PI").kind, "Constant");
   assert.match(api.entries.find(entry => entry.name === "radtodeg").description, /radians to degrees/);
   assert.match(api.entries.find(entry => entry.name === "degtorad").description, /degrees to radians/);
-  for (const name of ["XY", "ZX", "YZ", "X", "Y", "Z", "center", "origin"]) {
+  for (const name of ["XY", "ZX", "YZ", "X", "Y", "Z", "negX", "negY", "negZ", "center", "origin"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.folder, "defaults");
     assert.equal(entry.kind, "Constant");
@@ -184,6 +184,8 @@ test("editor globals resolve libcompass and gl-matrix types and documentation", 
   const code = `/** @type {Point} */
 const localCenter = center;
 const axisAtOrigin = spatialLine({ direction: Z, origin });
+const negativeAxes = [negX, negY, negZ];
+const rotatedNegativeAxis = negX.rotate({ axis: negY, angle: 90 });
 const angleDEG = radtodeg(PI / 4);
 const angleRAD = degtorad(angleDEG);
 setTriangulationResolution(0.1);

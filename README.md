@@ -140,9 +140,10 @@ documentation links open the folder containing their target. Operations such as
 `functionalize` and the packed-coordinate `transformMat4`. Folder assignment
 follows libcompass's `src/operations/`, `src/defaults/`, and `src/util/` structure;
 internal geometry helpers are not part of the public docs. Defaults include
-origin planes `XY`, `ZX`, `YZ`, unit spatial lines `X`, `Y`, `Z` (all with zero
-origins), `center` (the Point `{ x: 0, y: 0 }`), and `origin` (the vec3 `[0, 0, 0]`), available directly
-in scripts and Monaco tooltips. Plane letters give local axis order; the normals
+origin planes `XY`, `ZX`, `YZ`, unit spatial lines `X`, `Y`, `Z` and their negative
+directions `negX`, `negY`, `negZ` (all with zero origins), `center` (the Point
+`{ x: 0, y: 0 }`), and `origin` (the vec3 `[0, 0, 0]`), available directly in scripts
+and Monaco tooltips. Plane letters give local axis order; the normals
 are +Z, +Y, and +X respectively. Treat shared defaults as immutable.
 Signatures, TSDoc, parameters, and examples are generated from libcompass source
 when Vite starts or builds, and update during development when that source changes.

@@ -30,6 +30,11 @@ test("render scopes isolate repeated declarations and expose math globals", () =
     if (center.x !== 0 || center.y !== 0 || !vec3.exactEquals(origin, [0, 0, 0])) {
       throw new Error("Incorrect center/origin globals");
     }
+    for (const [axis, expected] of [[negX, [-1, 0, 0]], [negY, [0, -1, 0]], [negZ, [0, 0, -1]]]) {
+      if (!(axis instanceof SpatialLine) || !vec3.exactEquals(axis, expected) || !vec3.exactEquals(axis.origin, origin)) {
+        throw new Error("Incorrect negative axis globals");
+      }
+    }
     circle({ center, radius: 1 });
     spatialLine({ direction: Z, origin });`;
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
