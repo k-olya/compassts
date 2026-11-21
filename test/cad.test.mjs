@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Circle, Node, Solid, setTriangulationResolution } from "libcompass";
+import { Circle, Node, Solid, TRIANGULATION_RESOLUTION, setTriangulationResolution } from "libcompass";
 import { DEFAULT_CODE, evaluateCode, exportBinaryStl } from "../src/cad.ts";
 import { useCadStore } from "../src/store.ts";
 
@@ -61,8 +61,29 @@ if (JSON.stringify(segments) !== before) throw new Error('Source polyline was mo
 if (rounded.length !== 4 || !rounded.every(element => element instanceof PlanarCurve)) throw new Error('Not a circular profile');
 scene.add(sketch().add(rounded).extrude({ length: 2 }));`);
   assert.equal(result.scene.children.length, 1);
-  assert.equal(result.scene.children[0].surfaces.length, 6);
+  assert.equal(result.scene.children[0].surfaces.length, 3);
   assert.ok(result.positions.length > 0);
+});
+
+test("a cylinder made from rounded rectangle arcs can round into a sphere", () => {
+  const result = evaluateCode(`
+const s = sketch();
+const rect = centerRectangle({ center, corner: { x: 10, y: 10 } });
+const arcs = roundPolyline({ segments: rect, radius: 10 });
+s.add(arcs);
+const part = s.extrude({ length: 20 });
+if (part.surfaces.length !== 3 || part.boundaries.length !== 2) throw new Error('Unnecessary arc seams');
+scene.add(part.round({ radius: 10 }));`);
+  assert.equal(result.scene.children[0].surfaces.length, 2);
+  assert.ok(result.positions.length > 0);
+  for (const surface of result.scene.children[0].surfaces) for (const u of [0, 0.23, 0.61, 1]) for (const v of [0, 0.17, 0.72, 1]) {
+    const [x, y, z] = surface.at(u, v).position;
+    assert.ok(Math.abs(Math.hypot(x, y, z - 10) - 10) < 1e-8);
+  }
+  for (let i = 0; i < result.positions.length; i += 3) {
+    const [x, y, z] = result.positions.subarray(i, i + 3);
+    assert.ok(Math.abs(Math.hypot(x, y, z - 10) - 10) <= TRIANGULATION_RESOLUTION + 2e-6);
+  }
 });
 
 test("spatial lines and nonmutating rigid transforms are script globals", () => {
