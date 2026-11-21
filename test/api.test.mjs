@@ -29,13 +29,13 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.match(node.members.find(member => member.name === "add").signature, /add\(\.\.\.children: Node\[\]\): this/);
   assert.match(node.members.find(member => member.name === "remove").description, /object identity/);
   assert.match(api.entries.find(entry => entry.name === "Solid").signature, /extends Memo/);
-  for (const name of ["Point", "Vertex", "SpatialBoundary", "PlanarLoop"]) {
+  for (const name of ["Point", "Vertex", "SpatialBoundary", "PlanarLoop", "SurfaceTrim", "SurfaceRegionChart"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Interface");
     assert.equal(entry.signature, `interface ${name}`);
     assert.ok(entry.members.every(member => member.name !== "constructor"));
   }
-  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialSurface", "ruledSurface"]) {
+  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialSurface", "ruledSurface", "surfaceRegion"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Function");
     assert.match(entry.description, /shorthand for/);
@@ -89,6 +89,8 @@ test("documentation folders distinguish constructors, shorthands, operations, de
     assert.ok(api.libraries[`file:///node_modules/libcompass/operations/${name}.d.ts`]);
   }
   assert.equal(folder("TrimmedSurface"), "classes");
+  assert.equal(folder("SurfaceRegion"), "classes");
+  assert.equal(folder("surfaceRegion"), "shorthands");
   for (const name of ["intersect", "difference", "extrudeCut"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.folder, "operations");

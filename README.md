@@ -48,10 +48,13 @@ It extrudes the sketch normally, then subtracts that solid; choose placement,
 signed length, and degree draft angle for a blind or through cut. All return new
 solids and preserve the inputs. Only own surfaces participate; child nodes from
 the first operand are retained unchanged. Empty intersections have no surfaces.
-Planar and supported single-rail curved/plane intersections are supported;
-general curved surface/surface intersections, curved coincidence, multi-chart
-trims, or unresolved sewing report explicit console errors. Outputs retain exact
-surface equations and shared topology, with mesh checks used only for analysis.
+Planar and regular parametric surface intersections support open cuts, closed
+loops, holes and multiple charts across periodic seams. `SurfaceRegion` retains
+curved patches through later booleans, with reversed tool walls lining cuts.
+Singular, branching/tangent or unresolved arrangements report console errors.
+Outputs retain exact surface equations and shared topology; mesh checks are used
+only for analysis and validation. These details appear in the generated docs
+and Monaco tooltips for the existing boolean tools.
 
 The book button in the left toolbar switches the right pane between the model
 and searchable libcompass API documentation, preserving both views' state.
@@ -130,10 +133,10 @@ uses `angleDEG = 3` for its draft angle. `Transform.rotation` also uses degrees.
 entries in the docs browser's Util folder.
 
 Extrusion keeps circles and curved walls analytic. Solids expose `surfaces`
-(`Face` or `SpatialSurface`) and shared `boundaries` (`Edge` or `SpatialCurve`).
+(`Face`, `SpatialSurface` or `SurfaceRegion`) and shared `boundaries` (`Edge` or `SpatialCurve`).
 Sweeps also use a temporary mesh to check for invalid geometry. The library-wide
 `TRIANGULATION_RESOLUTION` is a configurable model-unit target for midpoint-to-chord
-deviation, defaulting to `0.1`. The Resolution field above the preview replaces
+deviation, defaulting to `0.0128`. The Resolution field above the preview replaces
 the Z-up label: enter a value from `0.001` to `1`, then press Enter or leave the
 field to rebuild the model. The field's arrow buttons and keyboard Up/Down
 double/halve the value and rebuild immediately. Out-of-range values are clamped;

@@ -59,6 +59,36 @@ test("boolean operations and Solid methods are script globals and render their e
   assert.ok(result.positions.every(Number.isFinite));
 });
 
+test("general curved booleans render through script globals and retain mathematical regions", () => {
+  const result = evaluateCode(`const a = sketch().add(circle({ center: { x: 0, y: 0 }, radius: 2 })).extrude({ length: 5 });
+const b = sketch().add(circle({ center: { x: 2, y: 0 }, radius: 2 })).extrude({ length: 5 });
+const cut = a.difference({ tool: b });
+if (!cut.surfaces.some(surface => surface instanceof SurfaceRegion)) throw new Error("Missing parametric trims");
+scene.add(cut, intersect({ solid: a, tool: b }));`);
+  assert.equal(result.scene.children.length, 2);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
+test("a radial extrude cut through walls on a chamfered base renders without seam errors", () => {
+  const result = evaluateCode(`const baseSketch = sketch();
+const center = { x: 0, y: 0 };
+baseSketch.add(circle({ center, radius: 6 }));
+const base = baseSketch.extrude({ length: 2 }).chamfer({ boundaries: [0] });
+scene.add(base);
+const wallSketch = sketch({ plane: base.surfaces[1] });
+wallSketch.add(circle({ center, radius: 6 }), circle({ center, radius: 5 }));
+const walls = wallSketch.extrude({ length: 3 });
+const cutterSketch = sketch({ plane: ZX });
+cutterSketch.add(circle({ center: { x: 3.5, y: 0 }, radius: 1 }));
+const cutWalls = walls.extrudeCut({ sketch: cutterSketch, length: 10 });
+scene.add(cutWalls);`);
+  assert.equal(result.scene.children.length, 2);
+  assert.equal(result.scene.children[1].boundaries.length, 6);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
 test("resolution changes rerun the model, update script globals, and enforce bounds", () => {
   const original = useCadStore.getState();
   try {
@@ -66,8 +96,8 @@ test("resolution changes rerun the model, update script globals, and enforce bou
 scene.add(sketch().add(circle({ center: { x: 0, y: 0 }, radius: 10 })).extrude({ length: 3 }));`);
     useCadStore.getState().render();
     const coarse = useCadStore.getState().rendered.positions.length;
-    assert.equal(useCadStore.getState().resolution, 0.1);
-    assert.equal(useCadStore.getState().consoleEntries[0].text, "0.1");
+    assert.equal(useCadStore.getState().resolution, 0.0128);
+    assert.equal(useCadStore.getState().consoleEntries[0].text, "0.0128");
     useCadStore.getState().setResolution(0.001);
     assert.equal(useCadStore.getState().error, null);
     assert.equal(useCadStore.getState().consoleEntries[0].text, "0.001");
