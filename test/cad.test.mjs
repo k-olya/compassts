@@ -20,11 +20,41 @@ test("the example evaluates into a Node scene using real libcompass geometry", (
 
 test("render scopes isolate repeated declarations and expose math globals", () => {
   const source = `const m = mat4.create(); scene.add(new TransformMat4({ matrix: m }));
+    const path = spatialCurveFromPlanar({ curve: { at: t => ({ x: t, y: 0 }) }, plane: ZX });
+    if (!(path instanceof SpatialCurve) || path.at(0.5).position[2] !== 0.5) {
+      throw new Error("Incorrect planar curve lift global");
+    }
     if (PI !== Math.PI || radtodeg(PI) !== 180 || degtorad(-90) !== -PI / 2) {
       throw new Error("Incorrect angle globals");
     }`;
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
   assert.deepEqual(evaluateCode(source).positions, new Float32Array());
+});
+
+test("planar segment generators are script globals that produce extrudable profiles", () => {
+  const result = evaluateCode(`
+    scene.add(sketch().add(...polyline({ points: [{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 2, y: 3 }], loop: true })).extrude({ length: 2 }));
+    scene.add(sketch().add(...rectangle({ start: { x: 10, y: 0 }, end: { x: 14, y: 3 } })).extrude({ length: 2 }));
+    scene.add(sketch().add(...centerRectangle({ center: { x: 20, y: 0 }, corner: { x: 22, y: 3 } })).extrude({ length: 2 }));
+  `);
+  assert.equal(result.scene.children.length, 3);
+  assert.deepEqual(result.scene.children.map(part => part.surfaces.length), [5, 6, 6]);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
+test("arc is a script global for all four arc constructions", () => {
+  const result = evaluateCode(`
+    const arcs = [
+      arc({ start: { x: -2, y: 0 }, end: { x: 2, y: 0 }, angle: 180 }),
+      arc({ center: { x: 10, y: 0 }, start: { x: 8, y: 0 }, end: { x: 12, y: 0 }, direction: "clockwise" }),
+      arc({ start: { x: 20, y: 0 }, through: { x: 22, y: 2 }, end: { x: 24, y: 0 } }),
+      arc({ start: { x: 32, y: 0 }, center: { x: 30, y: 0 }, angle: -270 }),
+    ];
+    for (const a of arcs) scene.add(sketch().add(a, lineSegment({ start: a.end, end: a.start })).extrude({ length: 2 }));
+  `);
+  assert.equal(result.scene.children.length, 4);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
 });
 
 test("trimming operations are script globals and render retained exact surfaces", () => {

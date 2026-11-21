@@ -19,6 +19,38 @@ export function PlanarToolsIcon() {
   </ToolIcon>;
 }
 
+export function SpatialCurvesIcon() {
+  return <ToolIcon>
+    <path d="M4 3v15l9 4m-9-4 16-8" opacity="0.4" />
+    <path d="M4 14C7 3 14 22 20 5" strokeWidth="1.75" />
+    <circle cx="4" cy="14" r="1.5" fill="currentColor" />
+    <circle cx="20" cy="5" r="1.5" fill="currentColor" />
+  </ToolIcon>;
+}
+
+export function SpatialSurfacesIcon() {
+  return <ToolIcon>
+    <path d="M3 7c6-8 12 8 18 0v11c-6 8-12-8-18 0Z" fill="currentColor" fillOpacity="0.12" />
+    <path d="M3 12.5c6-8 12 8 18 0M9 6v11m6-4V8m0 5v6" opacity="0.5" />
+  </ToolIcon>;
+}
+
+export function ArraysIcon() {
+  return <ToolIcon>
+    <rect x="3" y="3" width="6" height="6" rx="1" fill="currentColor" fillOpacity="0.2" />
+    <rect x="15" y="3" width="6" height="6" rx="1" />
+    <rect x="3" y="15" width="6" height="6" rx="1" />
+    <rect x="15" y="15" width="6" height="6" rx="1" />
+  </ToolIcon>;
+}
+
+export function HelpersIcon() {
+  return <ToolIcon>
+    <path d="M14 4a6 6 0 0 0-7 8l-4 4a3 3 0 0 0 5 5l4-4a6 6 0 0 0 8-7l-4 4-5-5Z" fill="currentColor" fillOpacity="0.12" />
+    <circle cx="5.5" cy="18.5" r="0.75" fill="currentColor" />
+  </ToolIcon>;
+}
+
 export function ExtrudeIcon() {
   return <ToolIcon>
     <path d="m2 10 6.5-3.5L15 10l-6.5 3.5Z" fill="currentColor" fillOpacity="0.2" />
@@ -115,5 +147,56 @@ export function PlanarCurveIcon() {
     <path d="M4 19C4 4 20 20 20 5" strokeWidth="1.75" />
     <rect x="2" y="17" width="4" height="4" rx="0.5" fill="currentColor" fillOpacity="0.16" />
     <rect x="18" y="3" width="4" height="4" rx="0.5" fill="currentColor" fillOpacity="0.16" />
+  </ToolIcon>;
+}
+
+export function CircleIcon() {
+  return <ToolIcon>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 12h8.5" opacity="0.5" />
+    <path d="M10 12h4m-2-2v4" strokeWidth="1.75" />
+  </ToolIcon>;
+}
+
+export function SpatialCurveFromPlanarIcon() {
+  return <ToolIcon>
+    <path d="m2 18 8-4 12 4-8 4Z" fill="currentColor" fillOpacity="0.08" opacity="0.5" />
+    <path d="M5 18c3-7 9 6 14-1" opacity="0.4" strokeDasharray="2 2" />
+    <path d="M5 8c3-7 9 6 14-1M12 17V6m-2 2 2-2 2 2" />
+  </ToolIcon>;
+}
+
+export function PolylineIcon() {
+  return <ToolIcon>
+    <path d="m4 18 5-12 7 10 4-12" />
+    <path d="M2.5 16.5h3v3h-3Zm5-12h3v3h-3Zm7 10h3v3h-3Zm4-12h3v3h-3Z" fill="currentColor" fillOpacity="0.2" />
+  </ToolIcon>;
+}
+
+export function RectangleIcon() {
+  return <ToolIcon>
+    <path d="M4 6h16v12H4Z" fill="currentColor" fillOpacity="0.08" />
+    <path d="m4 6 16 12" opacity="0.4" strokeDasharray="2 2" />
+    <rect x="2.5" y="4.5" width="3" height="3" fill="currentColor" />
+    <rect x="18.5" y="16.5" width="3" height="3" fill="currentColor" />
+  </ToolIcon>;
+}
+
+export function CenterRectangleIcon() {
+  return <ToolIcon>
+    <path d="M4 6h16v12H4Z" fill="currentColor" fillOpacity="0.08" />
+    <path d="m12 12 8-6" opacity="0.4" strokeDasharray="2 2" />
+    <path d="M9 12h6m-3-3v6" />
+    <rect x="18.5" y="4.5" width="3" height="3" fill="currentColor" />
+  </ToolIcon>;
+}
+
+export function ArcIcon() {
+  return <ToolIcon>
+    <path d="M4 18A12 12 0 0 1 20 6" strokeWidth="1.75" />
+    <path d="m4 18 12-1 4-11" opacity="0.4" strokeDasharray="2 2" />
+    <circle cx="4" cy="18" r="1.5" fill="currentColor" />
+    <circle cx="20" cy="6" r="1.5" fill="currentColor" />
+    <path d="M14 17h4m-2-2v4" opacity="0.65" />
   </ToolIcon>;
 }

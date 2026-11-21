@@ -4,17 +4,41 @@ A code-based CAD app powered by libcompass: write JavaScript in Monaco on the
 left, inspect the model or API documentation on the right, and export binary STL.
 Render and Export STL stay in the top menu.
 
-The left icon toolbar selects 3D or 2D code tools and opens the documentation
-browser. 3D tools insert `extrude`, `extrudeAlongCurve`, `extrudeCut`, `chamfer`,
-`intersect`, `difference`, `trimCurve`, and `trimSurface` calls; 2D tools insert
-`sketch`, `lineSegment`, `planarCurve`, and `trimCurve` calls. Each inserts an options template
-at the editor cursor, replacing the current selection. Tab / Shift+Tab move
-between editable values; Undo removes the insertion. Tools restore the editor
-when it is hidden and leave rendering to the Render button. Toolbar sections have
-visible separators, and the tool section changes with the selected mode. The
-right toolbar's expand button hides or restores the editor without entering
-browser fullscreen. Editor contents, the camera, and the selected documentation
-page are preserved when switching views.
+The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
+surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
+`polyline`, `rectangle`, `centerRectangle`, `circle`, `arc`, `planarCurve`, and planar
+`trimCurve` calls. Solid tools insert `extrude`,
+`extrudeAlongCurve`, `extrudeCut`, `chamfer`, `intersect`, and `difference` calls.
+Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
+`trimSurface`. Arrays and Helpers are currently empty. Each tool inserts an options
+template at the editor cursor, replacing the current selection. Tab / Shift+Tab
+move between editable values; Undo removes the insertion. Tools restore the
+editor when it is hidden and leave rendering to the Render button. Toolbar
+sections have visible separators, and the tool section changes with the selected
+category. The right toolbar has the documentation toggle and an expand button
+that hides or restores the editor without entering browser fullscreen. Editor
+contents, the camera, and the selected documentation page are preserved when
+switching views.
+
+Polyline, Rectangle, and Center rectangle return arrays of connected line
+segments. Their toolbar templates insert `...polyline({ ... })` (or the
+corresponding rectangle function), ready to use inside a sketch’s `add(...)` call. `polyline`
+takes `points` and an optional `loop` boolean (default false); `rectangle` takes
+opposite `start`/`end` corners; `centerRectangle` takes `center`/`corner`. Rectangles
+align to the sketch's local axes. These are generators, without separate classes.
+
+The Arc tool inserts `arc({ start, end, angle })`. Tab through the coordinates to
+its final snippet choice to switch to `center` plus `direction`, or a `through`
+point, instead of `angle`. A fourth choice uses `start`, `center`, and signed
+`angle`, calculating the endpoint automatically.
+The three-point form uses center/start/end on one circle, with `clockwise` or
+`counterclockwise` travel (default counterclockwise). The two-point form uses a
+signed sweep in degrees: positive counterclockwise, negative clockwise, nonzero
+and strictly between -360 and 360. The start/through/end form fits the circle
+through those three points and chooses the arc passing through the middle point;
+collinear points or a conflicting explicit direction throw. Major arcs are
+supported in all forms. It returns an exact
+`PlanarCurve`; use a closing line or other curves when building a filled profile.
 
 The Chamfer tool inserts `chamfer({ solid: part, length: 0.5, angle: 45,
 boundaries: [] })`. Boundary indices refer to the original solid's `boundaries`
@@ -56,7 +80,7 @@ Outputs retain exact surface equations and shared topology; mesh checks are used
 only for analysis and validation. These details appear in the generated docs
 and Monaco tooltips for the existing boolean tools.
 
-The book button in the left toolbar switches the right pane between the model
+The book button in the right toolbar switches the right pane between the model
 and searchable libcompass API documentation, preserving both views' state.
 The docs index has collapsible Classes (including interfaces and types),
 Shorthands, Operations, Defaults, and Util folders. Search shows matches across all folders, and
@@ -148,7 +172,8 @@ four segments at coarse settings. Every curve uses the same adaptive midpoint sa
 [0, 1]. Use `circle.at(angleDEG / 360)` for degrees or
 `circle.at(angleRAD / (2 * PI))` for radians. All loop
 samples include the repeated closing point. `SpatialCurve.fromPlanarCurve({ curve,
-plane })` lifts any planar curve into world space without sampling, replacing
+plane })` (also `spatialCurveFromPlanar({ curve, plane })`) lifts any planar curve
+into world space without sampling, replacing
 `fromCircle`. `PlanarCurve`, `SpatialCurve`, `SpatialSurface`, `RuledSurface`, their shorthands, and `SpatialBoundary` types
 are included in the editor and documentation browser.
 

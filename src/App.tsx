@@ -4,13 +4,62 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { ChamferIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, PolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
 
+const toolCategories = [
+  { id: "planar", label: "2D tools", Icon: PlanarToolsIcon },
+  { id: "solid", label: "Solid tools", Icon: SolidToolsIcon },
+  { id: "spatialCurves", label: "Spatial curves", Icon: SpatialCurvesIcon },
+  { id: "spatialSurfaces", label: "Spatial surfaces", Icon: SpatialSurfacesIcon },
+  { id: "arrays", label: "Arrays", Icon: ArraysIcon },
+  { id: "helpers", label: "Helpers", Icon: HelpersIcon },
+] as const;
+
+type ToolMode = typeof toolCategories[number]["id"];
+
 const toolSections = {
-  "3d": [
+  planar: [
+    {
+      label: "Sketch", Icon: SketchIcon,
+      snippet: "sketch({\n  plane: ${1:XY},\n})$0",
+    },
+    {
+      label: "Line segment", Icon: LineSegmentIcon,
+      snippet: "lineSegment({\n  start: { x: ${1:0}, y: ${2:0} },\n  end: { x: ${3:10}, y: ${4:0} },\n})$0",
+    },
+    {
+      label: "Polyline", Icon: PolylineIcon,
+      snippet: "...polyline({\n  points: [\n    { x: ${1:0}, y: ${2:0} },\n    { x: ${3:10}, y: ${4:0} },\n    { x: ${5:10}, y: ${6:10} },\n  ],\n  loop: ${7|true,false|},\n})$0",
+    },
+    {
+      label: "Rectangle", Icon: RectangleIcon,
+      snippet: "...rectangle({\n  start: { x: ${1:0}, y: ${2:0} },\n  end: { x: ${3:20}, y: ${4:10} },\n})$0",
+    },
+    {
+      label: "Center rectangle", Icon: CenterRectangleIcon,
+      snippet: "...centerRectangle({\n  center: { x: ${1:0}, y: ${2:0} },\n  corner: { x: ${3:10}, y: ${4:5} },\n})$0",
+    },
+    {
+      label: "Circle", Icon: CircleIcon,
+      snippet: "circle({\n  center: { x: ${1:0}, y: ${2:0} },\n  radius: ${3:10},\n})$0",
+    },
+    {
+      label: "Arc", Icon: ArcIcon,
+      snippet: "arc({\n  start: { x: ${1:0}, y: ${2:0} },\n  ${3|end: { x: 10\\, y: 0 }\\, angle: 180,end: { x: 10\\, y: 0 }\\, center: { x: 5\\, y: 0 }\\, direction: \"counterclockwise\",end: { x: 10\\, y: 0 }\\, through: { x: 5\\, y: 5 },center: { x: 5\\, y: 0 }\\, angle: 180|},\n})$0",
+    },
+    {
+      label: "Planar curve", Icon: PlanarCurveIcon,
+      snippet: "planarCurve({\n  at: t => ({\n    x: ${1:10} * t,\n    y: ${2:10} * t * t,\n  }),\n})$0",
+    },
+    {
+      label: "Trim curve", Icon: TrimCurveIcon,
+      snippet: "trimCurve({\n  curve: ${1:curve},\n  cutters: [line({ point: { x: ${2:0}, y: ${3:0} }, direction: [${4:0}, ${5:1}] })],\n  keep: ${6:0.5},\n})$0",
+    },
+  ],
+  solid: [
     {
       label: "Extrude", Icon: ExtrudeIcon,
       snippet: "extrude({\n  sketch: ${1:s},\n  length: ${2:10},\n  axis: ${3:Z},\n  angle: ${4:0},\n})$0",
@@ -35,37 +84,29 @@ const toolSections = {
       label: "Difference", Icon: DifferenceIcon,
       snippet: "difference({\n  solid: ${1:part},\n  tool: ${2:cutter},\n})$0",
     },
+  ],
+  spatialCurves: [
+    {
+      label: "Spatial curve from planar", Icon: SpatialCurveFromPlanarIcon,
+      snippet: "spatialCurveFromPlanar({\n  curve: ${1:curve},\n  plane: ${2:XY},\n})$0",
+    },
     {
       label: "Trim curve", Icon: TrimCurveIcon,
       snippet: "trimCurve({\n  curve: ${1:path},\n  cutters: [${2:XY}],\n  keep: ${3:0.5},\n})$0",
     },
+  ],
+  spatialSurfaces: [
     {
       label: "Trim surface", Icon: TrimSurfaceIcon,
       snippet: "trimSurface({\n  surface: ${1:part.surfaces[0]},\n  cutter: ${2:YZ},\n  keep: \"${3|positive,negative|}\",\n})$0",
     },
   ],
-  "2d": [
-    {
-      label: "Sketch", Icon: SketchIcon,
-      snippet: "sketch({\n  plane: ${1:XY},\n})$0",
-    },
-    {
-      label: "Line segment", Icon: LineSegmentIcon,
-      snippet: "lineSegment({\n  start: { x: ${1:0}, y: ${2:0} },\n  end: { x: ${3:10}, y: ${4:0} },\n})$0",
-    },
-    {
-      label: "Planar curve", Icon: PlanarCurveIcon,
-      snippet: "planarCurve({\n  at: t => ({\n    x: ${1:10} * t,\n    y: ${2:10} * t * t,\n  }),\n})$0",
-    },
-    {
-      label: "Trim curve", Icon: TrimCurveIcon,
-      snippet: "trimCurve({\n  curve: ${1:curve},\n  cutters: [line({ point: { x: ${2:0}, y: ${3:0} }, direction: [${4:0}, ${5:1}] })],\n  keep: ${6:0.5},\n})$0",
-    },
-  ],
+  arrays: [],
+  helpers: [],
 };
 
 export default function App() {
-  const [toolMode, setToolMode] = useState<"3d" | "2d">("3d");
+  const [toolMode, setToolMode] = useState<ToolMode>("solid");
   const [viewExpanded, setViewExpanded] = useState(false);
   const [editorLocation, setEditorLocation] = useState<ScriptLocation | null>(null);
   const [orthographic, setOrthographic] = useState(false);
@@ -102,18 +143,14 @@ export default function App() {
       </header>
       <div className="workspace-body">
         <SideToolbar label="Code tools">
-          <ToolbarSection label="Code commands">
-            <button type="button" aria-label="3D tools" title="3D tools" aria-pressed={toolMode === "3d"} onClick={() => setToolMode("3d")}>
-              <SolidToolsIcon />
-            </button>
-            <button type="button" aria-label="2D tools" title="2D tools" aria-pressed={toolMode === "2d"} onClick={() => setToolMode("2d")}>
-              <PlanarToolsIcon />
-            </button>
-            <button type="button" aria-label="Documentation" title={docsOpen ? "Show 3D view" : "Browse libcompass documentation"} aria-pressed={docsOpen} aria-controls="docs-pane" onClick={() => setDocsOpen(open => !open)}>
-              <FiBookOpen aria-hidden="true" />
-            </button>
+          <ToolbarSection label="Tool categories">
+            {toolCategories.map(({ id, label, Icon }) => (
+              <button key={id} type="button" aria-label={label} title={label} aria-pressed={toolMode === id} onClick={() => setToolMode(id)}>
+                <Icon />
+              </button>
+            ))}
           </ToolbarSection>
-          <ToolbarSection key={toolMode} label={`${toolMode.toUpperCase()} tools`}>
+          <ToolbarSection key={toolMode} label={toolCategories.find(category => category.id === toolMode)!.label}>
             {toolSections[toolMode].map(({ label, Icon, snippet }) => (
               <button key={label} type="button" aria-label={label} title={`Insert ${label.toLowerCase()} call`} onClick={() => {
                 setViewExpanded(false);
@@ -170,6 +207,9 @@ export default function App() {
         </div>
         <SideToolbar label="Rendered view tools">
           <ToolbarSection label="View">
+            <button type="button" aria-label="Documentation" title={docsOpen ? "Show 3D view" : "Browse libcompass documentation"} aria-pressed={docsOpen} aria-controls="docs-pane" onClick={() => setDocsOpen(open => !open)}>
+              <FiBookOpen aria-hidden="true" />
+            </button>
             <button type="button" onClick={() => setViewExpanded(expanded => !expanded)} aria-label={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} title={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} aria-pressed={viewExpanded} aria-controls="code-pane">
               {viewExpanded ? <FiMinimize aria-hidden="true" /> : <FiMaximize aria-hidden="true" />}
             </button>
