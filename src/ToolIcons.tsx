@@ -95,6 +95,15 @@ export function ChamferIcon() {
   </ToolIcon>;
 }
 
+export function RoundIcon() {
+  return <ToolIcon>
+    <path d="M3 8.5 11 4l6 3.5-8 4.5Z" fill="currentColor" fillOpacity="0.08" />
+    <path d="m9 12 8-4.5c2.5 1.5 4 3 4 6l-8 4.5c0-3-1.5-4.5-4-6Z" fill="currentColor" fillOpacity="0.3" />
+    <path d="M3 8.5v9L13 23v-5m8-4.5v5L13 23" />
+    <path d="M17 2v3m3-2-3 2-2-1" opacity="0.45" />
+  </ToolIcon>;
+}
+
 export function IntersectIcon() {
   return <ToolIcon>
     <path d="M3 4h12v12H3ZM9 8h12v12H9Z" opacity="0.45" />

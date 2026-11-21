@@ -8,7 +8,7 @@ The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
 surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
 `polyline`, `rectangle`, `centerRectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
 `trimCurve` calls. Solid tools insert `extrude`,
-`extrudeAlongCurve`, `extrudeCut`, `chamfer`, `intersect`, and `difference` calls.
+`extrudeAlongCurve`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
 `trimSurface`. Helpers contains Spatial line, Plane, Rotate, and Displace; Arrays
 contains Displacement array and Rotation array. Each tool inserts an options
@@ -82,6 +82,14 @@ through those three points and chooses the arc passing through the middle point;
 collinear points or a conflicting explicit direction throw. Major arcs are
 supported in all forms. It returns an exact
 `PlanarCurve`; use a closing line or other curves when building a filled profile.
+
+The Round tool inserts `round({ solid: part, radius: 0.5, boundaries: [] })`.
+It creates a new solid with tangent constant-radius rounds; `part.round(options)`
+is the method form. Empty boundary indices select every original boundary.
+Rounds remain mathematical surfaces, including spherical corners. At the radius
+limit, consumed faces disappear so cylinders can become spheres, hollow cylinders
+can become tori, and four parallel cube rounds can become a cylinder. Unresolved
+or unsupported intersections report errors instead of returning an invalid solid.
 
 The Chamfer tool inserts `chamfer({ solid: part, length: 0.5, angle: 45,
 boundaries: [] })`. Boundary indices refer to the original solid's `boundaries`

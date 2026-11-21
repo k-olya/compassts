@@ -130,6 +130,15 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(folder("extrude"), "operations");
   assert.equal(folder("extrudeAlongCurve"), "operations");
   assert.equal(folder("chamfer"), "operations");
+  assert.equal(folder("round"), "operations");
+  const round = api.entries.find(entry => entry.name === "round");
+  assert.match(round.description, /constant-radius tangent rounds/);
+  assert.match(round.signature, /radius\?: number/);
+  assert.ok(round.members.some(member => member.name === "options.radius" && member.description.includes("0.5")));
+  assert.ok(api.libraries["file:///node_modules/libcompass/operations/round.d.ts"]);
+  const solidRound = api.entries.find(entry => entry.name === "Solid").members.find(member => member.name === "round");
+  assert.match(solidRound.description, /new rounded solid/);
+  assert.match(solidRound.signature, /options\?/);
   for (const name of ["trimCurve", "trimSurface"]) {
     assert.equal(folder(name), "operations");
     const entry = api.entries.find(entry => entry.name === name);
@@ -203,6 +212,9 @@ const solid = extrude({ sketch: s, length: 10, angle: 3 });
 const beveled = chamfer({ solid, length: 0.5, angle: 45, boundaries: [0] });
 const beveledByMethod = solid.chamfer({ length: 0.5, angle: 45, boundaries: [0] });
 const defaultBeveled = solid.chamfer();
+const rounded = round({ solid, radius: 0.5, boundaries: [0] });
+const roundedByMethod = solid.round({ radius: 0.5, boundaries: [0] });
+const defaultRounded = solid.round();
 const common = intersect({ solid, tool: swept });
 const removed = difference({ solid, tool: swept });
 const cutExtrusion = extrudeCut({ solid, sketch: s, length: -3, axis: Z, angle: 2 });

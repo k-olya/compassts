@@ -224,6 +224,19 @@ scene.add(part);`);
   assert.ok(rendered.positions.length > 0);
 });
 
+test("round is a script global and Solid.round renders a sphere while preserving its source", () => {
+  const rendered = evaluateCode(`
+const source = sketch().add(circle({ center, radius: 1 })).extrude({ length: 2 });
+const before = source.triangulate();
+const sphere = round({ solid: source, radius: 1, boundaries: [] });
+const otherSphere = source.round({ radius: 1 });
+if (sphere === source || source.triangulate() !== before || source.surfaces.length !== 3) throw new Error('Input was changed');
+if (sphere.surfaces.length !== 2 || otherSphere.surfaces.length !== 2) throw new Error('Not a sphere');
+scene.add(sphere);`);
+  assert.equal(rendered.scene.children.length, 1);
+  assert.ok(rendered.positions.length > 0);
+});
+
 test("invalid code, invalid scenes, and invalid geometry report errors", () => {
   assert.throws(() => evaluateCode("const = ;"), SyntaxError);
   assert.throws(() => evaluateCode("throw new Error('broken model')"), /broken model/);
