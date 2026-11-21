@@ -42,6 +42,34 @@ test("planar segment generators are script globals that produce extrudable profi
   assert.ok(result.positions.every(Number.isFinite));
 });
 
+test("spatial lines and nonmutating rigid transforms are script globals", () => {
+  const result = evaluateCode(`
+    if (!(X instanceof SpatialLine) || Z.origin.some(value => value !== 0)) throw new Error("Invalid default axes");
+    const axis = spatialLine({ direction: [0, 0, 2], origin: [1, 0, 0] });
+    const frame = XY.rotate({ axis: X, angle: 30 });
+    const source = sketch({ plane: frame }).add(circle({ center: { x: 0, y: 0 }, radius: 2 })).extrude({ axis: Z, length: 3 });
+    const turned = source.rotate({ axis, angle: 90 });
+    const moved = turned.displace({ vector: [4, 0, 1] });
+    if (source === moved || moved.surfaces.some(surface => source.surfaces.includes(surface))) throw new Error("Mutated solid");
+    scene.add(source, moved);
+  `);
+  assert.equal(result.scene.children.length, 2);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
+test("ellipse is a script global that renders an exact rotated loop", () => {
+  const result = evaluateCode(`
+    const oval = ellipse({ center: { x: 3, y: -2 }, radiusX: 6, radiusY: 3, rotation: 30 });
+    if (!(oval instanceof PlanarCurve) || oval.start !== oval.end) throw new Error("Invalid ellipse loop");
+    scene.add(sketch().add(oval).extrude({ length: 4 }));
+  `);
+  assert.equal(result.scene.children.length, 1);
+  assert.equal(result.scene.children[0].surfaces.length, 3);
+  assert.ok(result.positions.length > 0);
+  assert.ok(result.positions.every(Number.isFinite));
+});
+
 test("arc is a script global for all four arc constructions", () => {
   const result = evaluateCode(`
     const arcs = [

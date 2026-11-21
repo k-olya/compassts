@@ -35,7 +35,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
     assert.equal(entry.signature, `interface ${name}`);
     assert.ok(entry.members.every(member => member.name !== "constructor"));
   }
-  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialSurface", "ruledSurface", "surfaceRegion"]) {
+  for (const name of ["node", "memo", "transform", "transformMat4Node", "line", "lineSegment", "circle", "plane", "sketch", "edge", "face", "solid", "planarCurve", "spatialCurve", "spatialLine", "spatialSurface", "ruledSurface", "surfaceRegion"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.kind, "Function");
     assert.match(entry.description, /shorthand for/);
@@ -46,6 +46,15 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
     assert.deepEqual(entry.tags, constructor.tags);
     assert.doesNotMatch(entry.signature, /ConstructorParameters/);
     assert.ok(entry.members.every(member => member.name.startsWith("options.") && member.description));
+  }
+  for (const className of ["Plane", "SpatialLine", "SpatialCurve", "Edge", "Surface", "Solid"]) {
+    const entry = api.entries.find(entry => entry.name === className);
+    for (const method of ["rotate", "displace"]) {
+      const member = entry.members.find(member => member.name === method);
+      assert.ok(member, `${className}.${method} is documented`);
+      assert.match(member.signature, /: this/);
+      assert.match(member.description, /new/);
+    }
   }
   const circle = api.entries.find(entry => entry.name === "circle");
   assert.match(circle.signature, /center: Point/);
@@ -90,6 +99,19 @@ test("documentation folders distinguish constructors, shorthands, operations, de
     assert.match(entry.signature, /LineSegment\[\]/);
     assert.ok(entry.members.every(member => member.name.startsWith("options.") && member.description));
   }
+  assert.equal(folder("ellipse"), "operations");
+  const ellipseEntry = api.entries.find(entry => entry.name === "ellipse");
+  assert.match(ellipseEntry.signature, /PlanarCurve/);
+  assert.deepEqual(ellipseEntry.members.map(member => member.name), ["options.center", "options.radiusX", "options.radiusY", "options.rotation"]);
+  assert.ok(ellipseEntry.members.every(member => member.description));
+  for (const name of ["rotate", "displace"]) {
+    assert.equal(folder(name), "operations");
+    const entry = api.entries.find(entry => entry.name === name);
+    assert.ok(entry.members.some(member => member.name === "options.object" && member.description));
+    assert.match(entry.description, /new object/);
+  }
+  assert.match(api.entries.find(entry => entry.name === "SpatialLine").signature, /extends Array<number>/);
+  for (const name of ["X", "Y", "Z"]) assert.match(api.entries.find(entry => entry.name === name).signature, /SpatialLine/);
   assert.equal(folder("arc"), "operations");
   const arcEntry = api.entries.find(entry => entry.name === "arc");
   assert.match(arcEntry.signature, /PlanarCurve/);
@@ -150,6 +172,8 @@ const resolution = TRIANGULATION_RESOLUTION;
 const vertex = { position: [0, 0, 0] };
 const s = new Sketch({ plane: new Plane({ a: vertex }) });
 s.add(new Circle({ center, radius: 5 }));
+const oval = ellipse({ center, radiusX: 6, radiusY: 3, rotation: 30 });
+sketch().add(oval);
 const arcByAngle = arc({ start: { x: 0, y: 0 }, end: { x: 10, y: 0 }, angle: -180 });
 const arcByCenter = arc({ center, start: { x: 2, y: 0 }, end: { x: 0, y: 2 }, direction: "clockwise" });
 const arcThroughPoint = arc({ start: { x: 0, y: 0 }, through: { x: 5, y: 5 }, end: { x: 10, y: 0 } });
@@ -191,6 +215,29 @@ scene.add(transform);
 solid.refresh();
 scene.remove(new Node(), new Node());
 const vector = vec3.fromValues(1, 2, 3);
+const axis = spatialLine({ direction: [0, 0, 2], origin: [1, 2, 3] });
+const axisClass = new SpatialLine({ direction: [1, 0, 0] });
+const axisVector = vec3.add([0, 0, 0], axis, X);
+vec3.normalize(axisClass, axisClass);
+const turnedPlane = rotate({ object: XY, axis: X, angle: 30 });
+const movedAxis = displace({ object: Z, vector });
+const turnedSolid = rotate({ object: solid, axis, angle: -45 });
+const movedSolid = displace({ object: turnedSolid, vector });
+const movedCurve = displace({ object: path, vector });
+const turnedSurface = rotate({ object: generalSurface, axis, angle: 90 });
+const chainedPlane = XY.rotate({ axis: X, angle: 30 }).displace({ vector });
+const chainedLine = axis.rotate({ axis: Z, angle: 20 }).displace({ vector });
+const chainedCurve = path.rotate({ axis: Z, angle: 90 }).displace({ vector });
+const chainedSolid = solid.rotate({ axis, angle: 45 }).displace({ vector }).chamfer();
+const chainedFace = face({ outer: [spatialCurveFromPlanar({ curve: circle({ center, radius: 2 }) })] }).rotate({ axis: X, angle: 30 }).displace({ vector });
+const facePlane = chainedFace.plane;
+const chainedSurface = generalSurface.rotate({ axis, angle: 90 }).displace({ vector });
+const chainedTrim = trim.rotate({ axis: Z, angle: 10 }).displace({ vector });
+const retainedUV = chainedTrim.parameters(0.5, 0.5);
+const movedOrigin = movedAxis.origin;
+const planeNormal = turnedPlane.normal;
+scene.add(movedSolid);
+
 const onXY = sketch({ plane: XY });
 const onZX = sketch({ plane: ZX });
 const onYZ = sketch({ plane: YZ });

@@ -6,11 +6,11 @@ Render and Export STL stay in the top menu.
 
 The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
 surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
-`polyline`, `rectangle`, `centerRectangle`, `circle`, `arc`, `planarCurve`, and planar
+`polyline`, `rectangle`, `centerRectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
 `trimCurve` calls. Solid tools insert `extrude`,
 `extrudeAlongCurve`, `extrudeCut`, `chamfer`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
-`trimSurface`. Arrays and Helpers are currently empty. Each tool inserts an options
+`trimSurface`. Helpers contains Spatial line, Plane, Rotate, and Displace; Arrays is currently empty. Each tool inserts an options
 template at the editor cursor, replacing the current selection. Tab / Shift+Tab
 move between editable values; Undo removes the insertion. Tools restore the
 editor when it is hidden and leave rendering to the Render button. Toolbar
@@ -26,6 +26,27 @@ corresponding rectangle function), ready to use inside a sketch’s `add(...)` c
 takes `points` and an optional `loop` boolean (default false); `rectangle` takes
 opposite `start`/`end` corners; `centerRectangle` takes `center`/`corner`. Rectangles
 align to the sketch's local axes. These are generators, without separate classes.
+
+The Helpers category inserts `spatialLine({ direction, origin })`, `plane({ a, b, c })`,
+`rotate({ object, axis, angle })`, and `displace({ object, vector })` option templates.
+SpatialLine is a vec3-compatible direction array with a copied origin (default
+zero); X/Y/Z are zero-origin unit lines. Extrusion uses the direction only.
+Rotate uses signed degrees around a spatial line, including its origin. Displace
+uses the supplied XYZ vector without normalizing it. Both return new planes,
+spatial curves/lines, edges, solids, or surfaces, preserving their mathematical
+geometry and shared topology. Solid child geometry moves under new lazy transform
+nodes without changing source nodes or memo caches.
+
+The same transformations are available as `.rotate({ axis, angle })` and
+`.displace({ vector })` on each supported class, including inherited surface types.
+For example, `part.rotate({ axis: Z, angle: 45 }).displace({ vector: [10, 0, 0] })`
+returns a new solid and supports further modeling operations. These methods and
+their parameter docs are available to Monaco.
+
+The Ellipse tool inserts `ellipse({ center, radiusX, radiusY, rotation })`.
+The radii are positive semi-axis lengths, and rotation is counterclockwise in
+degrees (default zero). The result is an exact closed `PlanarCurve`, ready to add
+to a sketch; it uses the same sampling and extrusion paths as other curves.
 
 The Arc tool inserts `arc({ start, end, angle })`. Tab through the coordinates to
 its final snippet choice to switch to `center` plus `direction`, or a `through`
@@ -89,7 +110,8 @@ documentation links open the folder containing their target. Operations such as
 `functionalize` and the packed-coordinate `transformMat4`. Folder assignment
 follows libcompass's `src/operations/`, `src/defaults/`, and `src/util/` structure;
 internal geometry helpers are not part of the public docs. Defaults include
-origin planes `XY`, `ZX`, `YZ` and unit vectors `X`, `Y`, `Z`, available directly
+origin planes `XY`, `ZX`, `YZ` and unit spatial lines `X`, `Y`, `Z` (all with zero
+origins), available directly
 in scripts and Monaco tooltips. Plane letters give local axis order; the normals
 are +Z, +Y, and +X respectively. Treat shared defaults as immutable.
 Signatures, TSDoc, parameters, and examples are generated from libcompass source

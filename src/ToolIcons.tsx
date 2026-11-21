@@ -158,6 +158,14 @@ export function CircleIcon() {
   </ToolIcon>;
 }
 
+export function EllipseIcon() {
+  return <ToolIcon>
+    <ellipse cx="12" cy="12" rx="9" ry="5.5" transform="rotate(-25 12 12)" />
+    <path d="m4 15.7 16-7.4m-10-1 4 9.4" opacity="0.4" strokeDasharray="2 2" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+  </ToolIcon>;
+}
+
 export function SpatialCurveFromPlanarIcon() {
   return <ToolIcon>
     <path d="m2 18 8-4 12 4-8 4Z" fill="currentColor" fillOpacity="0.08" opacity="0.5" />
@@ -198,5 +206,39 @@ export function ArcIcon() {
     <circle cx="4" cy="18" r="1.5" fill="currentColor" />
     <circle cx="20" cy="6" r="1.5" fill="currentColor" />
     <path d="M14 17h4m-2-2v4" opacity="0.65" />
+  </ToolIcon>;
+}
+
+export function SpatialLineIcon() {
+  return <ToolIcon>
+    <path d="m3 21 18-18m-6 0h6v6" />
+    <circle cx="9" cy="15" r="2.5" fill="currentColor" fillOpacity="0.2" />
+    <path d="m4 14 6 6" opacity="0.4" />
+  </ToolIcon>;
+}
+
+export function PlaneIcon() {
+  return <ToolIcon>
+    <path d="m2 15 12-9 8 3-12 9Z" fill="currentColor" fillOpacity="0.12" />
+    <path d="m10 18 4-12m-8 6 12 3" opacity="0.4" />
+    <circle cx="2" cy="15" r="1.25" fill="currentColor" />
+    <circle cx="14" cy="6" r="1.25" fill="currentColor" />
+    <circle cx="22" cy="9" r="1.25" fill="currentColor" />
+  </ToolIcon>;
+}
+
+export function RotateIcon() {
+  return <ToolIcon>
+    <path d="M19 8a8 8 0 1 0 1 7M19 3v5h-5" />
+    <path d="M12 5v14" opacity="0.4" strokeDasharray="2 2" />
+    <circle cx="12" cy="12" r="2" fill="currentColor" fillOpacity="0.2" />
+  </ToolIcon>;
+}
+
+export function DisplaceIcon() {
+  return <ToolIcon>
+    <path d="M2 13h8v8H2Z" opacity="0.4" strokeDasharray="2 2" />
+    <path d="M14 2h8v8h-8Z" fill="currentColor" fillOpacity="0.12" />
+    <path d="m6 17 12-11m-6 0h6v6" />
   </ToolIcon>;
 }

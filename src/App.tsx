@@ -4,7 +4,7 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, PolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -45,6 +45,10 @@ const toolSections = {
     {
       label: "Circle", Icon: CircleIcon,
       snippet: "circle({\n  center: { x: ${1:0}, y: ${2:0} },\n  radius: ${3:10},\n})$0",
+    },
+    {
+      label: "Ellipse", Icon: EllipseIcon,
+      snippet: "ellipse({\n  center: { x: ${1:0}, y: ${2:0} },\n  radiusX: ${3:10},\n  radiusY: ${4:5},\n  rotation: ${5:0},\n})$0",
     },
     {
       label: "Arc", Icon: ArcIcon,
@@ -102,7 +106,24 @@ const toolSections = {
     },
   ],
   arrays: [],
-  helpers: [],
+  helpers: [
+    {
+      label: "Spatial line", Icon: SpatialLineIcon,
+      snippet: "spatialLine({\n  direction: [${1:0}, ${2:0}, ${3:1}],\n  origin: [${4:0}, ${5:0}, ${6:0}],\n})$0",
+    },
+    {
+      label: "Plane", Icon: PlaneIcon,
+      snippet: "plane({\n  a: [${1:0}, ${2:0}, ${3:0}],\n  b: [${4:1}, ${5:0}, ${6:0}],\n  c: [${7:0}, ${8:1}, ${9:0}],\n})$0",
+    },
+    {
+      label: "Rotate", Icon: RotateIcon,
+      snippet: "rotate({\n  object: ${1:part},\n  axis: ${2:Z},\n  angle: ${3:45},\n})$0",
+    },
+    {
+      label: "Displace", Icon: DisplaceIcon,
+      snippet: "displace({\n  object: ${1:part},\n  vector: [${2:10}, ${3:0}, ${4:0}],\n})$0",
+    },
+  ],
 };
 
 export default function App() {
