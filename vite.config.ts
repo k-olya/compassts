@@ -6,6 +6,7 @@ import { libcompassApi } from "./scripts/libcompass-api.ts";
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "./",
   build: {
     outDir: "build",
   },
