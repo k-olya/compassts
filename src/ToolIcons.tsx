@@ -243,15 +243,6 @@ export function RectangleIcon() {
   </ToolIcon>;
 }
 
-export function CenterRectangleIcon() {
-  return <ToolIcon>
-    <path d="M4 6h16v12H4Z" fill="currentColor" fillOpacity="0.08" />
-    <path d="m12 12 8-6" opacity="0.4" strokeDasharray="2 2" />
-    <path d="M9 12h6m-3-3v6" />
-    <rect x="18.5" y="4.5" width="3" height="3" fill="currentColor" />
-  </ToolIcon>;
-}
-
 export function SvgPathIcon() {
   return <ToolIcon>
     <path d="M4 12C4 0 20 17 20 4" strokeWidth="1.75" />

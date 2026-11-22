@@ -15,7 +15,7 @@ const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-5
 
 test('script annotations become separate preview meshes while plain geometry retains its default material', () => {
   const result = evaluateCode(`
-const part = sketch().add(centerRectangle({ center, corner: { x: 1, y: 1 } })).extrude({ length: 2 });
+const part = sketch().add(rectangle({ center, corner2: { x: 1, y: 1 } })).extrude({ length: 2 });
 scene.add(part.displace({ vector: [-5, 0, 0] }));
 scene.add(annotate({ solid: part, name: 'Blue', color: '#2288ee', alpha: 0.4 }));
 scene.add(part.displace({ vector: [5, 0, 0] }).annotate({ name: 'Red', color: 'red', alpha: 1 }));
@@ -77,7 +77,7 @@ scene.add(transform);
 
 test('solid-owned triangles stay in the parent annotation and nested child geometry gets its own mesh', () => {
   const result = evaluateCode(`
-const parent = sketch().add(centerRectangle({ center, corner: { x: 1, y: 1 } })).extrude({ length: 2 });
+const parent = sketch().add(rectangle({ center, corner2: { x: 1, y: 1 } })).extrude({ length: 2 });
 const child = parent.displace({ vector: [0, 0, 4] });
 const original = parent.triangulate();
 parent.add(child.annotate({ name: 'Child', color: '#0088ff' })); parent.refresh();
@@ -120,7 +120,7 @@ scene.add(annotatedNode({ color: 'red' }).add(new Triangle()), annotatedNode({ c
 
 test('palette names, constants, and automatic defaults reach actual preview mesh materials', () => {
   const result = evaluateCode(`
-const part = sketch().add(centerRectangle({ center, corner: { x: 1, y: 1 } })).extrude({ length: 2 });
+const part = sketch().add(rectangle({ center, corner2: { x: 1, y: 1 } })).extrude({ length: 2 });
 for (const name of Object.keys(colors)) scene.add(part.annotate({ color: name }));
 scene.add(annotate({ solid: part }));
 scene.add(part.annotate({ color: colors.blue }));

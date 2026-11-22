@@ -21,11 +21,11 @@ test("the example evaluates into a Node scene using real libcompass geometry", (
 test("measure returns dimensions and logs once per call through the script console with a script location", t => {
   const nativeLog = t.mock.method(console, "log", () => {});
   const entries = [];
-  const source = `const part = sketch().add(rectangle({ start: center, end: { x: 2, y: 3 } })).extrude({ length: 4 });
+  const source = `const part = sketch().add(rectangle({ corner1: center, corner2: { x: 2, y: 3 } })).extrude({ length: 4 });
 const result = measure({ object: part });
 if (result.volume !== 24 || result.boundingBox.size[2] !== 4) throw new Error("Incorrect solid measurement");
 measure({ object: part.surfaces });
-measure({ object: rectangle({ start: center, end: { x: 2, y: 3 } }), log: undefined });`;
+measure({ object: rectangle({ corner1: center, corner2: { x: 2, y: 3 } }), log: undefined });`;
   evaluateCode(source, entry => entries.push(entry));
   assert.equal(entries.length, 3);
   assert.equal(nativeLog.mock.callCount(), 3);
@@ -64,8 +64,8 @@ test("render scopes isolate repeated declarations and expose math globals", () =
 test("planar segment generators are script globals that produce extrudable profiles", () => {
   const result = evaluateCode(`
     scene.add(sketch().add(...polyline({ points: [{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 2, y: 3 }], loop: true })).extrude({ length: 2 }));
-    scene.add(sketch().add(...rectangle({ start: { x: 10, y: 0 }, end: { x: 14, y: 3 } })).extrude({ length: 2 }));
-    scene.add(sketch().add(centerRectangle({ center: { x: 0, y: 0 }, corner: { x: 1, y: 2 } })).extrude({ length: 2 }));
+    scene.add(sketch().add(...rectangle({ corner1: { x: 10, y: 0 }, corner2: { x: 14, y: 3 } })).extrude({ length: 2 }));
+    scene.add(sketch().add(rectangle({ center: { x: 0, y: 0 }, corner2: { x: 1, y: 2 } })).extrude({ length: 2 }));
   `);
   assert.equal(result.scene.children.length, 3);
   assert.deepEqual(result.scene.children.map(part => part.surfaces.length), [5, 6, 6]);
@@ -74,7 +74,7 @@ test("planar segment generators are script globals that produce extrudable profi
 
 test("roundPolyline is a script global producing extrudable tangent arcs without changing its input", () => {
   const result = evaluateCode(`
-const segments = rectangle({ start: { x: -1, y: -1 }, end: { x: 1, y: 1 } });
+const segments = rectangle({ corner1: { x: -1, y: -1 }, corner2: { x: 1, y: 1 } });
 const before = JSON.stringify(segments);
 const rounded = roundPolyline({ segments, radius: 1 });
 if (JSON.stringify(segments) !== before) throw new Error('Source polyline was modified');
@@ -88,7 +88,7 @@ scene.add(sketch().add(rounded).extrude({ length: 2 }));`);
 test("a cylinder made from rounded rectangle arcs can round into a sphere", () => {
   const result = evaluateCode(`
 const s = sketch();
-const rect = centerRectangle({ center, corner: { x: 10, y: 10 } });
+const rect = rectangle({ center, corner2: { x: 10, y: 10 } });
 const arcs = roundPolyline({ segments: rect, radius: 10 });
 s.add(arcs);
 const part = s.extrude({ length: 20 });
@@ -322,7 +322,7 @@ scene.add(sphere);`);
 test("opposite cube rounds render at the limiting radius for bottom and wall boundary selections", () => {
   for (const [radius, boundaries, surfaces] of [[10, [0, 2], 7], [9.9, [0, 2], 8], [10, [8, 9], 7]]) {
     const result = evaluateCode(`
-const rect = centerRectangle({ center, corner: { x: 10, y: 10 } });
+const rect = rectangle({ center, corner2: { x: 10, y: 10 } });
 const part3 = sketch().add(rect).extrude({ length: 20 });
 scene.add(part3.round({ radius: ${radius}, boundaries: ${JSON.stringify(boundaries)} }));`);
     assert.equal(result.scene.children[0].surfaces.length, surfaces);
@@ -361,7 +361,7 @@ test("mesh STL downloads use only the selected transformed mesh and a filename b
   t.mock.method(globalThis, "setTimeout", callback => { callback(); return 0; });
   const store = () => useCadStore.getState();
   store().setCode(`
-const part = sketch().add(centerRectangle({ center, corner: { x: 1, y: 2 } })).extrude({ length: 3 });
+const part = sketch().add(rectangle({ center, corner2: { x: 1, y: 2 } })).extrude({ length: 3 });
 scene.add(part.displace({ vector: [10, 20, 30] }).annotate({ name: "Left:arm/part", color: "blue", alpha: 0.5 }));
 scene.add(part.displace({ vector: [-10, 0, 0] }).annotate({ name: "Other", color: "red" }));
 `);

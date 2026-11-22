@@ -5,9 +5,12 @@ import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } from "three"
 import { STLExporter } from "three/addons/exporters/STLExporter.js";
 import { parse } from "acorn";
 import { createScriptConsole, errorEntry, type ConsoleOutput, type ScriptLocation } from "./script-console.ts";
+import { MAIN_FILE, projectSource, type ScriptFile } from "./script-files.ts";
+import { mapProjectLocation, runProjectFiles, type ProjectSourceMaps } from "./project-runtime.ts";
 
 export const DEFAULT_CODE = `// libcompass constructors, shorthands, and gl-matrix are available by name.
 // Add nodes to scene, then press Render (Ctrl/Cmd + Enter).
+// Reusable shape helpers live in primitives.js.
 
 const width = 100;
 const depth = 64;
@@ -15,7 +18,7 @@ const height = 12;
 
 // start by creating a 2d sketch
 const s = sketch();
-s.add(centerRectangle({ center, corner: { x: width / 2, y: depth / 2} }));
+s.add(rectangle({ center, width, height: depth }));
 s.add(
   circle({ center: { x: -28, y: 0 }, radius: 10 }),
   circle({ center: { x: 28, y: 0 }, radius: 10 }),
@@ -34,6 +37,7 @@ export interface RenderedScene {
   positions: Float32Array;
   meshes: RenderedMesh[];
   source: string;
+  projectSource?: string;
 }
 
 export interface RenderedMesh {
@@ -79,6 +83,43 @@ function collectMeshes(scene: Node, positions: Float32Array): RenderedMesh[] {
   });
 }
 
+function scriptBindings(scriptConsole: Console) {
+  return { ...compass,
+    measure: (options: Parameters<typeof compass.measure>[0]) => compass.measure({ ...options, log: options.log === undefined ? result => scriptConsole.log(result) : options.log }),
+    glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
+}
+
+function renderedScene(scene: unknown, source: string): RenderedScene {
+  if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
+  const positions = scene.triangulate();
+  if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
+    throw new TypeError("scene.triangulate() must return finite XYZ triangle positions in a Float32Array.");
+  }
+  return { scene, positions: positions.slice(), meshes: collectMeshes(scene, positions), source };
+}
+
+export async function evaluateProject(files: readonly ScriptFile[], output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION,
+  options: { signal?: AbortSignal; onFileLoaded?: (file: ScriptFile) => void } = {}) {
+  const maps: ProjectSourceMaps = new Map();
+  const map = (location: ScriptLocation) => mapProjectLocation(location, maps);
+  let runtime: Awaited<ReturnType<typeof runProjectFiles>> | undefined;
+  try {
+    compass.setTriangulationResolution(resolution);
+    const scriptConsole = output ? createScriptConsole(output, map) : console;
+    runtime = await runProjectFiles(files, { ...scriptBindings(scriptConsole), scene: new Node(), console: scriptConsole }, maps, { ...options, output });
+    const rendered = renderedScene(runtime.scene, files.find(file => file.name === MAIN_FILE)!.source);
+    rendered.projectSource = projectSource(runtime.files);
+    return { rendered, dispose: runtime.dispose };
+  } catch (error) {
+    runtime?.dispose();
+    if (options.signal?.aborted) throw error;
+    const details = error as { message?: string; name?: string; stack?: string; scriptLocation?: ScriptLocation };
+    const normalized = error instanceof Error ? error : Object.assign(new Error(details?.message ?? String(error)), { name: details?.name ?? "Error", stack: details?.stack });
+    output?.(errorEntry(normalized, details?.scriptLocation, undefined, map));
+    throw normalized;
+  }
+}
+
 export function evaluateCode(source: string, output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION): RenderedScene {
   // ponytail: synchronous, trusted local code; a worker is needed for execution time limits.
   // Block scope lets local names shadow library bindings such as sketch and circle.
@@ -87,9 +128,7 @@ export function evaluateCode(source: string, output?: ConsoleOutput, resolution 
   try {
     compass.setTriangulationResolution(resolution);
     const scriptConsole = output ? createScriptConsole(output) : console;
-    const bindings = { ...compass,
-      measure: (options: Parameters<typeof compass.measure>[0]) => compass.measure({ ...options, log: options.log === undefined ? result => scriptConsole.log(result) : options.log }),
-      glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
+    const bindings = scriptBindings(scriptConsole);
     let evaluate: (...args: unknown[]) => unknown;
     try {
       evaluate = new Function("scene", "console", ...Object.keys(bindings), body) as typeof evaluate;
@@ -106,12 +145,7 @@ export function evaluateCode(source: string, output?: ConsoleOutput, resolution 
       throw error;
     }
     const scene = evaluate(new Node(), scriptConsole, ...Object.values(bindings));
-    if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
-    const positions = scene.triangulate();
-    if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
-      throw new TypeError("scene.triangulate() must return finite XYZ triangle positions in a Float32Array.");
-    }
-    return { scene, positions: positions.slice(), meshes: collectMeshes(scene, positions), source };
+    return renderedScene(scene, source);
   } catch (error) {
     output?.(errorEntry(error, syntaxLocation));
     throw error;

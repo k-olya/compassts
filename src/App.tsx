@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
 import { FiBookOpen, FiChevronDown, FiChevronUp, FiMaximize, FiMinimize } from "react-icons/fi";
 import Docs from "./Docs.tsx";
+import FilePicker from "./FilePicker.tsx";
+import { MAIN_FILE, projectSource } from "./script-files.ts";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { AnnotateIcon, MeasureIcon, DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { AnnotateIcon, MeasureIcon, DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -40,11 +42,7 @@ const toolSections = {
     },
     {
       label: "Rectangle", Icon: RectangleIcon,
-      snippet: "...rectangle({\n  start: { x: ${1:0}, y: ${2:0} },\n  end: { x: ${3:20}, y: ${4:10} },\n})$0",
-    },
-    {
-      label: "Center rectangle", Icon: CenterRectangleIcon,
-      snippet: "...centerRectangle({\n  center: { x: ${1:0}, y: ${2:0} },\n  corner: { x: ${3:10}, y: ${4:5} },\n})$0",
+      snippet: "...rectangle({\n  ${1|center: center\\, width: 20\\, height: 10,corner1: { x: 0\\, y: 10 }\\, corner2: { x: 20\\, y: 0 },center: center\\, corner2: { x: 10\\, y: 5 },corner1: { x: 0\\, y: 10 }\\, width: 20\\, height: 10,corner2: { x: 20\\, y: 0 }\\, width: 20\\, height: 10|},\n  rotation: ${2:0},\n})$0",
     },
     {
       label: "Circle", Icon: CircleIcon,
@@ -161,11 +159,12 @@ export default function App() {
   const [editorLocation, setEditorLocation] = useState<ScriptLocation | null>(null);
   const [orthographic, setOrthographic] = useState(false);
   const [docsOpen, setDocsOpen] = useState(false);
-  const { code, rendered, error, render, exportStl, resolution, setResolution } = useCadStore();
+  const { files, activeFile, rendering, rendered, error, render, exportStl, resolution, setResolution } = useCadStore();
   const editor = useRef<EditorHandle>(null);
   const resolutionInput = useRef<HTMLInputElement>(null);
   const triangles = rendered.positions.length / 9;
-  const changed = code !== rendered.source;
+  const changed = projectSource(files) !== rendered.projectSource;
+  const readOnly = !!files.find(file => file.name === activeFile)?.url;
   const stepResolution = (factor: number) => {
     const input = resolutionInput.current;
     if (!input) return;
@@ -202,7 +201,7 @@ export default function App() {
           </ToolbarSection>
           <ToolbarSection key={toolMode} label={toolCategories.find(category => category.id === toolMode)!.label}>
             {toolSections[toolMode].map(({ label, Icon, snippet }) => (
-              <button key={label} type="button" aria-label={label} title={`Insert ${label.toLowerCase()} call`} onClick={() => {
+              <button key={label} type="button" disabled={readOnly} aria-label={label} title={`Insert ${label.toLowerCase()} call`} onClick={() => {
                 setViewExpanded(false);
                 requestAnimationFrame(() => editor.current?.insertSnippet(snippet));
               }}>
@@ -213,7 +212,7 @@ export default function App() {
         </SideToolbar>
         <div className={`panes${viewExpanded ? " panes-expanded" : ""}`}>
           <section id="code-pane" className="pane editor-pane" aria-label="Code editor" hidden={viewExpanded}>
-            <div className="pane-header"><span><span className="js-label">JS</span> model.js</span><span className="pane-note">Ctrl / ⌘ + Enter</span></div>
+            <div className="pane-header"><FilePicker /><span className="pane-note">Ctrl / ⌘ + Enter</span></div>
             <Editor ref={editor} location={editorLocation} />
           </section>
           <section className="pane viewer-pane" aria-label="3D model preview" hidden={docsOpen}>
@@ -266,9 +265,9 @@ export default function App() {
           </ToolbarSection>
         </SideToolbar>
       </div>
-      <Console onNavigate={location => { setViewExpanded(false); setEditorLocation({ ...location }); }} />
+      <Console onNavigate={location => { setViewExpanded(false); useCadStore.getState().selectFile(location.file ?? MAIN_FILE); setEditorLocation({ ...location }); }} />
       <footer className="statusbar" aria-live="polite">
-        <span>{error ? "Render failed · Previous model retained" : changed ? "Changes not rendered" : "Rendered"}</span>
+        <span>{rendering ? "Rendering…" : error ? "Render failed · Previous model retained" : changed ? "Changes not rendered" : "Rendered"}</span>
         <span>{triangles.toLocaleString()} triangles</span>
       </footer>
     </main>

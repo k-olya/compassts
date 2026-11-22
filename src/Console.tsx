@@ -27,6 +27,7 @@ function ConsoleValue({ value, ancestors = [], nested = false }: { value: unknow
 
 export default function Console({ onNavigate }: { onNavigate: (location: ScriptLocation) => void }) {
   const entries = useCadStore(state => state.consoleEntries);
+  const files = useCadStore(state => state.files);
   const open = useCadStore(state => state.consoleOpen);
   const close = useCadStore(state => state.closeConsole);
   const scroll = useRef<OverlayScrollbarsComponentRef>(null);
@@ -41,11 +42,12 @@ export default function Console({ onNavigate }: { onNavigate: (location: ScriptL
   const locationLink = (location: ScriptLocation, key?: number) => (
     <a key={key} className="console-location" href="#code-pane" title={`Go to line ${location.line}, column ${location.column}`}
       onClick={event => { event.preventDefault(); onNavigate(location); }}>
-      model.js:{location.line}:{location.column}
+      {location.file ?? "model.js"}:{location.line}:{location.column}
     </a>
   );
 
   if (!open) return null;
+  const framePattern = new RegExp(`(${files.map(file => file.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}:\\d+:\\d+)`, 'g');
 
   return (
     <section className="script-console" aria-label="Script console">
@@ -74,9 +76,9 @@ export default function Console({ onNavigate }: { onNavigate: (location: ScriptL
               {entry.parts ? <div className="console-parts">{entry.parts.map((part, index) => "text" in part
                 ? <span key={index}>{part.text}</span> : <ConsoleValue key={index} value={part.value} />)}</div> : <pre>{entry.text}</pre>}
               {entry.stack && <pre className="console-stack">{
-              entry.stack.split(/(model\.js:\d+:\d+)/g).map((part, index) => {
-                const match = part.match(/^model\.js:(\d+):(\d+)$/);
-                return match ? locationLink({ line: Number(match[1]), column: Number(match[2]) }, index) : part;
+              entry.stack.split(framePattern).map((part, index) => {
+                const match = part.match(/^(.*):(\d+):(\d+)$/);
+                return match ? locationLink({ file: match[1], line: Number(match[2]), column: Number(match[3]) }, index) : part;
               })
             }</pre>}</div>
             {entry.location && locationLink(entry.location)}

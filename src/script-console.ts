@@ -1,6 +1,7 @@
 import { consoleValueText } from "./console-values.ts";
 
 export interface ScriptLocation {
+  file?: string;
   line: number;
   column: number;
 }
@@ -23,25 +24,37 @@ export type ConsoleOutput = (entry: ConsoleEntry | null) => void;
 // Function adds two lines; the strict directive and block add two more.
 const SCRIPT_OFFSET = 4;
 
-function scriptTrace(stack = "") {
-  const frames = stack.split("\n").filter(line => /compass-script\.js:\d+:\d+/.test(line));
-  const mapped = frames.map(frame => frame.replace(/compass-script\.js:(\d+):(\d+)/g,
-    (_, line: string, column: string) => `model.js:${Math.max(1, Number(line) - SCRIPT_OFFSET)}:${column}`));
-  const match = mapped[0]?.match(/model\.js:(\d+):(\d+)/);
+export type LocationMapper = (location: ScriptLocation) => ScriptLocation;
+
+function errorStack(error: unknown): string | undefined {
+  return error && typeof error === "object" && "stack" in error && typeof error.stack === "string" ? error.stack : undefined;
+}
+
+function scriptTrace(stack = "", map: LocationMapper = location => location) {
+  let location: ScriptLocation | undefined;
+  const frames = stack.split("\n").filter(line => /(?:compass-script\.js|compass-file:\/\/\/[^\s)]+):\d+:\d+/.test(line));
+  const mapped = frames.map(frame => frame.replace(/(compass-script\.js|compass-file:\/\/\/[^\s)]+):(\d+):(\d+)/g,
+    (_, source: string, line: string, column: string) => {
+      const position = source === "compass-script.js"
+        ? { line: Math.max(1, Number(line) - SCRIPT_OFFSET), column: Number(column) }
+        : map({ file: decodeURIComponent(source.slice("compass-file:///".length)), line: Number(line), column: Number(column) });
+      location ??= position;
+      return `${position.file ?? "model.js"}:${position.line}:${position.column}`;
+    }));
   return {
     stack: mapped.join("\n").trim(),
-    location: match ? { line: Number(match[1]), column: Number(match[2]) } : undefined,
+    location,
   };
 }
 
-export function errorEntry(error: unknown, location?: ScriptLocation, context?: string): ConsoleEntry {
-  const trace = scriptTrace(error instanceof Error ? error.stack : undefined);
+export function errorEntry(error: unknown, location?: ScriptLocation, context?: string, map?: LocationMapper): ConsoleEntry {
+  const trace = scriptTrace(errorStack(error), map);
   return {
     id: nextEntryId++,
     level: "error",
     text: `${context ? `${context}: ` : ""}${error instanceof Error ? error.toString() : String(error)}`,
     location: location ?? trace.location,
-    stack: trace.stack || (location ? `at model.js:${location.line}:${location.column}` : error instanceof Error ? error.stack : undefined),
+    stack: trace.stack || (location ? `at ${location.file ?? "model.js"}:${location.line}:${location.column}` : errorStack(error)),
   };
 }
 
@@ -72,7 +85,7 @@ function format(args: unknown[]): ConsolePart[] {
   return parts;
 }
 
-export function createScriptConsole(output: ConsoleOutput): Console {
+export function createScriptConsole(output: ConsoleOutput, map?: LocationMapper): Console {
   const timers = new Map<string, number>();
   const counts = new Map<string, number>();
   let depth = 0;
@@ -102,14 +115,14 @@ export function createScriptConsole(output: ConsoleOutput): Console {
           args = [`${label}: ${count}`];
         }
         if (["profile", "profileEnd", "timeStamp"].includes(key)) return;
-        const trace = scriptTrace(new Error().stack);
+        const trace = scriptTrace(new Error().stack, map);
         const level = key === "assert" || key === "error" ? "error"
           : key === "warn" ? "warn" : key === "info" ? "info" : key === "debug" || key === "trace" ? "debug" : "log";
-        const error = args.find(value => value instanceof Error);
+        const error = args.find(value => errorStack(value));
         const parts: ConsolePart[] = [{ text: "  ".repeat(depth) }, ...format(args)];
         output({ id: nextEntryId++, level, parts,
           text: parts.map(part => "text" in part ? part.text : consoleValueText(part.value)).join(""), location: trace.location,
-          stack: key === "trace" ? trace.stack : error instanceof Error ? scriptTrace(error.stack).stack : undefined });
+          stack: key === "trace" ? trace.stack : errorStack(error) ? scriptTrace(errorStack(error), map).stack : undefined });
         if (key === "group" || key === "groupCollapsed") depth++;
       };
     },

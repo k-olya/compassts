@@ -6,7 +6,7 @@ Render and Export STL stay in the top menu.
 
 The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
 surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
-`polyline`, `roundPolyline`, `rectangle`, `centerRectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
+`polyline`, `roundPolyline`, `rectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
 `trimCurve` calls. Solid tools insert `extrude`,
 `extrudeAlongCurve`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
@@ -21,13 +21,18 @@ that hides or restores the editor without entering browser fullscreen. Editor
 contents, the camera, and the selected documentation page are preserved when
 switching views.
 
-Polyline, Rectangle, and Center rectangle return arrays of connected line
+Polyline and Rectangle return arrays of connected line
 segments. Their toolbar templates insert `...polyline({ ... })` (or the
 corresponding rectangle function), ready to use inside a sketch’s `add(...)` call. `polyline`
-takes `points` and an optional `loop` boolean (default false); `rectangle` takes
-opposite `start`/`end` corners; `centerRectangle` takes `center`/`corner`. Rectangles
-align to the sketch's local axes. These are generators, without separate classes.
-`Sketch.add` also accepts the returned arrays directly: `s.add(centerRectangle({ center, corner }))`.
+takes `points` and an optional `loop` boolean (default false). The single Rectangle
+tool offers opposite `corner1`/`corner2`, `center` plus either corner, or `width`/`height`
+with at most one anchor (`center`, `corner1`, or `corner2`). Sizes alone default to
+a center at (0, 0). With sizes, corner1 is the rotated local upper-left anchor and
+corner2 the lower-right anchor. Optional `rotation` is counterclockwise in degrees
+about the center. Width/height are actual side lengths; supplied corners stay at
+their final coordinates. Redundant defining sets and incomplete inputs throw.
+These are generators, without separate classes.
+`Sketch.add` also accepts the returned arrays directly: `s.add(rectangle({ center, corner2: corner }))`.
 Both `Sketch.add` and `Node.add` accept a mix of individual objects and readonly
 arrays, flattening array arguments one level in order without modifying inputs.
 Passing arrays directly avoids function argument limits when adding many objects.
@@ -399,4 +404,58 @@ one-finger trackpad movement. The app uses React, Three.js, Monaco, Zustand,
 React Icons, and Vite. `ToolbarSection` groups can be swapped according to UI state.
 
 Editor scripts run directly in the browser with page access. This is a local
-tool for code you trust; evaluation is synchronous and does not impose time limits.
+tool for code you trust; module loading is asynchronous, and script execution does not impose time limits.
+
+The filename dropdown manages multiple JavaScript files. Add a filename (the
+`.js` extension is appended automatically) or an HTTP(S) URL using the input
+inside the dropdown. `model.js` is always the entry point and cannot be renamed
+or deleted. Other local files can be renamed or deleted; update their import
+paths after renaming. File contents and per-file editor history remain available
+when switching files. URL sources are fetched and shown read-only; their server
+must permit browser requests through CORS.
+
+Local files are ES modules and run when imported from the entry point:
+
+```js
+// parts.js
+export function makePart(radius) {
+  return sketch().add(circle({ center, radius })).extrude({ length: 10 });
+}
+
+// model.js
+import { makePart } from './parts.js';
+scene.add(makePart(5));
+```
+
+Library globals remain available in every file. Explicit imports from
+`'libcompass'` and `'gl-matrix'` also work. HTTP(S) module imports and their relative
+dependencies load into the file list read-only. URL scripts without module syntax
+run as classic scripts before the main module and may define shared globals,
+including top-level `var`, `let`, `const`, and functions. Add classic dependencies
+in execution order. Module exports remain module-scoped. Each Render uses a
+fresh module context; top-level await and literal dynamic imports are supported.
+Computed dynamic imports currently report an explicit error. Console links and
+evaluation markers identify the originating file and open it in the editor.
+Project changes take effect when Render runs, regardless of which file is selected.
+
+The default project also includes an editable `primitives.js` module, built with
+sketches, extrusion, and rounding. Its five named exports take options objects:
+
+- `cuboid({ width = 10, depth = 10, height = 10 })`
+- `cylinder({ radius = 5, height = 10 })`
+- `cylinderElliptic({ radiusX = 5, radiusY = 3, height = 10 })`
+- `sphere({ radius = 5 })`
+- `torus({ majorRadius = 10, minorRadius = 2 })`
+
+All are centered at the world origin. Cylinders run along Z, and the torus's
+central axis is Z. This simple example uses the app's libcompass globals and
+delegates geometry handling to the library operations. Returned objects are ordinary
+mathematical solids, with the usual modeling, annotation, and placement methods. They use the current
+triangulation resolution. The module is loaded only when used by the main script:
+
+```js
+import { cuboid, cylinder, cylinderElliptic, sphere, torus } from './primitives.js';
+
+scene.add(cuboid({ width: 20, depth: 12, height: 8 }));
+scene.add(sphere({ radius: 5 }).displace({ vector: [25, 0, 0] }));
+```

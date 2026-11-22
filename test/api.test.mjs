@@ -110,12 +110,17 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   const folder = name => api.entries.find(entry => entry.name === name)?.folder;
   for (const name of ["Sketch", "Circle", "PlanarCurve", "PlanarLoop", "Point", "SketchElement"]) assert.equal(folder(name), "classes");
   for (const name of ["sketch", "circle", "transformMat4Node"]) assert.equal(folder(name), "shorthands");
-  for (const name of ["polyline", "rectangle", "centerRectangle"]) {
+  for (const name of ["polyline", "rectangle"]) {
     assert.equal(folder(name), "operations");
     const entry = api.entries.find(entry => entry.name === name);
     assert.match(entry.signature, /LineSegment\[\]/);
     assert.ok(entry.members.every(member => member.name.startsWith("options.") && member.description));
   }
+  assert.equal(folder("centerRectangle"), undefined);
+  const rectangleEntry = api.entries.find(entry => entry.name === "rectangle");
+  assert.deepEqual(rectangleEntry.members.map(member => member.name),
+    ["options.center", "options.corner1", "options.corner2", "options.width", "options.height", "options.rotation"]);
+  assert.match(rectangleEntry.members.find(member => member.name === "options.width").description, /actual side length/);
   assert.equal(folder("roundPolyline"), "operations");
   const roundPolyline = api.entries.find(entry => entry.name === "roundPolyline");
   assert.match(roundPolyline.signature, /LineSegment \| PlanarCurve/);
@@ -253,8 +258,8 @@ const arcThroughPoint = arc({ start: { x: 0, y: 0 }, through: { x: 5, y: 5 }, en
 const arcByCenterAngle = arc({ start: { x: 5, y: 0 }, center, angle: -90 });
 sketch().add(arcByAngle, arcByCenter, arcThroughPoint, arcByCenterAngle);
 const polygon = polyline({ points: [center, { x: 5, y: 0 }, { x: 5, y: 5 }], loop: true });
-const rect = rectangle({ start: center, end: { x: 10, y: 5 } });
-const centeredRect = centerRectangle({ center, corner: { x: 3, y: 2 } });
+const rect = rectangle({ corner1: center, corner2: { x: 10, y: 5 } });
+const centeredRect = rectangle({ center, corner2: { x: 3, y: 2 } });
 const roundedProfile = roundPolyline({ segments: rect, radius: 0.5 });
 sketch().add(roundedProfile);
 sketch().add(polygon, rect, centeredRect, center);
