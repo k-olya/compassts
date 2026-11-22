@@ -90,6 +90,18 @@ For example, `part.rotate({ axis: Z, angle: 45 }).displace({ vector: [10, 0, 0] 
 returns a new solid and supports further modeling operations. These methods and
 their parameter docs are available to Monaco.
 
+The Helpers category includes Measure, inserting `measure({ object: part })`.
+It returns an object and automatically prints it to the app console with a link
+to the calling line. Every result contains `boundingBox: { min, max, size }`
+using XYZ arrays; curves/segments also have `length`, surfaces have
+`surfaceArea`, and solids have `volume`. Sketches and finite points return bounds
+only. A flat nonempty array combines bounds and sums quantities, provided all
+entries share one measurement type. Overlapping objects are counted independently.
+Curved bounds and other quantities use the current resolution. Standalone planar
+objects use XY at Z = 0; sketches use their world-space plane and ignore infinite
+construction lines. Infinite objects and arbitrary nodes are rejected, and solid
+children are excluded. Empty geometry has null bounds and zero area/volume.
+
 The Arrays category inserts `displacementArray({ object, vector, N, offset, width })`
 or `rotationArray({ object, axis, N, offset, width })`. The final snippet choice
 selects which parameters to supply: exactly two of `N`, `offset`, `width`, with
@@ -111,6 +123,17 @@ The Ellipse tool inserts `ellipse({ center, radiusX, radiusY, rotation })`.
 The radii are positive semi-axis lengths, and rotation is counterclockwise in
 degrees (default zero). The result is an exact closed `PlanarCurve`, ready to add
 to a sketch; it uses the same sampling and extrusion paths as other curves.
+
+The SVG path tool inserts `svgPath({ d, position, scale })`, using the browser's
+native path geometry. It returns one `PlanarCurve`, or an array when gaps
+separate subpaths; connected sections stay together. Pass either result directly
+to `s.add(...)`. `position: { x: 0, y: 0 }` and `scale: { x: 1, y: 1 }` are
+the defaults. `at(t)` follows normalized native path length, then scales and
+translates the points; negative scales mirror axes. Y is not flipped by default.
+Stroke, caps, joins, and other SVG primitives are ignored. Open paths remain open;
+use closed outlines to extrude filled profiles, including holes and islands.
+Sampling uses the ordinary curve resolution and midpoint rule. The operation
+requires a browser; paths without any positive-length geometry throw.
 
 The Arc tool inserts `arc({ start, end, angle })`. Tab through the coordinates to
 its final snippet choice to switch to `center` plus `direction`, or a `through`

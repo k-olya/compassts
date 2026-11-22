@@ -60,6 +60,13 @@ export function AnnotateIcon() {
   </ToolIcon>;
 }
 
+export function MeasureIcon() {
+  return <ToolIcon>
+    <path d="m3 16 13-13 5 5-13 13Z" fill="currentColor" fillOpacity="0.12" />
+    <path d="m6 13 2 2m1-5 3 3m0-6 2 2m1-5 3 3" />
+  </ToolIcon>;
+}
+
 export function DisplacementArrayIcon() {
   return <ToolIcon>
     <rect x="2" y="9" width="5" height="6" rx="0.5" fill="currentColor" fillOpacity="0.2" />
@@ -242,6 +249,15 @@ export function CenterRectangleIcon() {
     <path d="m12 12 8-6" opacity="0.4" strokeDasharray="2 2" />
     <path d="M9 12h6m-3-3v6" />
     <rect x="18.5" y="4.5" width="3" height="3" fill="currentColor" />
+  </ToolIcon>;
+}
+
+export function SvgPathIcon() {
+  return <ToolIcon>
+    <path d="M4 12C4 0 20 17 20 4" strokeWidth="1.75" />
+    <rect x="2.5" y="10.5" width="3" height="3" fill="currentColor" />
+    <rect x="18.5" y="2.5" width="3" height="3" fill="currentColor" />
+    <text x="12" y="22" textAnchor="middle" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="7.5" fontWeight="700" fill="currentColor" stroke="none">SVG</text>
   </ToolIcon>;
 }
 

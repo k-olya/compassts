@@ -18,6 +18,26 @@ test("the example evaluates into a Node scene using real libcompass geometry", (
   assert.notEqual(evaluateCode(DEFAULT_CODE).scene, result.scene);
 });
 
+test("measure returns dimensions and logs once per call through the script console with a script location", t => {
+  const nativeLog = t.mock.method(console, "log", () => {});
+  const entries = [];
+  const source = `const part = sketch().add(rectangle({ start: center, end: { x: 2, y: 3 } })).extrude({ length: 4 });
+const result = measure({ object: part });
+if (result.volume !== 24 || result.boundingBox.size[2] !== 4) throw new Error("Incorrect solid measurement");
+measure({ object: part.surfaces });
+measure({ object: rectangle({ start: center, end: { x: 2, y: 3 } }), log: undefined });`;
+  evaluateCode(source, entry => entries.push(entry));
+  assert.equal(entries.length, 3);
+  assert.equal(nativeLog.mock.callCount(), 3);
+  assert.deepEqual(entries.map(entry => entry.location.line), [2, 4, 5]);
+  assert.ok(entries.every(entry => entry.level === "log"));
+  const measurements = entries.map(entry => entry.parts.find(part => "value" in part).value);
+  assert.equal(measurements[0].volume, 24);
+  assert.equal(measurements[1].surfaceArea, 52);
+  assert.equal(measurements[2].length, 10);
+  assert.deepEqual(measurements[0].boundingBox, { min: [0, 0, 0], max: [2, 3, 4], size: [2, 3, 4] });
+});
+
 test("render scopes isolate repeated declarations and expose math globals", () => {
   const source = `const m = mat4.create(); scene.add(new TransformMat4({ matrix: m }));
     const path = spatialCurveFromPlanar({ curve: { at: t => ({ x: t, y: 0 }) }, plane: ZX });

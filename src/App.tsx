@@ -4,7 +4,7 @@ import Docs from "./Docs.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { AnnotateIcon, DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { AnnotateIcon, MeasureIcon, DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CenterRectangleIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -61,6 +61,10 @@ const toolSections = {
     {
       label: "Planar curve", Icon: PlanarCurveIcon,
       snippet: "planarCurve({\n  at: t => ({\n    x: ${1:10} * t,\n    y: ${2:10} * t * t,\n  }),\n})$0",
+    },
+    {
+      label: "SVG path", Icon: SvgPathIcon,
+      snippet: "svgPath({\n  d: \"${1:M 0 0 C 0 10 10 10 10 0 Z}\",\n  position: { x: ${2:0}, y: ${3:0} },\n  scale: { x: ${4:1}, y: ${5:1} },\n})$0",
     },
     {
       label: "Trim curve", Icon: TrimCurveIcon,
@@ -124,6 +128,10 @@ const toolSections = {
     },
   ],
   helpers: [
+    {
+      label: "Measure", Icon: MeasureIcon,
+      snippet: "measure({\n  object: ${1:part},\n})$0",
+    },
     {
       label: "Annotate", Icon: AnnotateIcon,
       snippet: "annotate({\n  solid: ${1:part},\n  name: ${2:undefined},\n  color: \"${3|default,red,orange,amber,yellow,lime,green,teal,cyan,blue,indigo,violet,purple,pink,rose,gray|}\",\n  alpha: ${4:1},\n})$0",

@@ -86,7 +86,10 @@ export function evaluateCode(source: string, output?: ConsoleOutput, resolution 
   let syntaxLocation: ScriptLocation | undefined;
   try {
     compass.setTriangulationResolution(resolution);
-    const bindings = { ...compass, glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
+    const scriptConsole = output ? createScriptConsole(output) : console;
+    const bindings = { ...compass,
+      measure: (options: Parameters<typeof compass.measure>[0]) => compass.measure({ ...options, log: options.log === undefined ? result => scriptConsole.log(result) : options.log }),
+      glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
     let evaluate: (...args: unknown[]) => unknown;
     try {
       evaluate = new Function("scene", "console", ...Object.keys(bindings), body) as typeof evaluate;
@@ -102,7 +105,7 @@ export function evaluateCode(source: string, output?: ConsoleOutput, resolution 
       }
       throw error;
     }
-    const scene = evaluate(new Node(), output ? createScriptConsole(output) : console, ...Object.values(bindings));
+    const scene = evaluate(new Node(), scriptConsole, ...Object.values(bindings));
     if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
     const positions = scene.triangulate();
     if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
