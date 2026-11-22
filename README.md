@@ -358,6 +358,9 @@ Removal deletes all occurrences of the supplied objects and ignores absent ones.
 Render (or Ctrl/Cmd+Enter in the editor) evaluates the source and replaces the
 preview. Syntax, runtime, and invalid triangle data errors appear in the
 scrollable console below the panes and leave the previous model intact.
+The console and both tool panels use theme-matched OverlayScrollbars, with
+draggable handles that hide when you leave the panel. The console follows new
+output while at the bottom and preserves your position when you scroll up.
 Errors include editor line/column locations and user-script stack frames when
 available. Click a console location or a script stack frame to reveal and focus
 that position in the editor, restoring the code pane if it was hidden.

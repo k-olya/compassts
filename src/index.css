@@ -28,7 +28,8 @@ button:focus-visible { outline: 2px solid #f0c486; outline-offset: 3px; }
 .export-button:hover { background: #2b3b4c; }
 .toolbar button:disabled { opacity: 0.4; cursor: default; }
 .workspace-body { display: flex; flex: 1; min-height: 0; }
-.side-toolbar { width: 52px; flex-shrink: 0; padding: 8px 6px; overflow-y: auto; background: #18212c; }
+.os-theme-compass { --os-size: 10px; --os-padding-perpendicular: 2px; --os-padding-axis: 2px; --os-track-border-radius: 10px; --os-handle-border-radius: 10px; --os-handle-interactive-area-offset: 4px; --os-handle-bg: #526275; --os-handle-bg-hover: #8192a5; --os-handle-bg-active: #e7b874; }
+.side-toolbar { width: 52px; min-height: 0; flex-shrink: 0; padding: 8px 6px; background: #18212c; }
 .side-toolbar:first-child { border-right: 1px solid #303b48; }
 .side-toolbar:last-child { border-left: 1px solid #303b48; }
 .toolbar-section { display: flex; flex-direction: column; gap: 6px; }
@@ -105,7 +106,7 @@ button:focus-visible { outline: 2px solid #f0c486; outline-offset: 3px; }
 .console-header button { display: flex; align-items: center; justify-content: center; padding: 4px; border: 0; border-radius: 4px; color: #a9b8c9; background: transparent; cursor: pointer; }
 .console-header button svg { width: 16px; height: 16px; }
 .console-header button:hover { color: #eef0f4; background: #2b3b4c; }
-.console-output { flex: 1; min-height: 0; overflow: auto; font: 12px/1.6 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
+.console-output { flex: 1; min-height: 0; font: 12px/1.6 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
 .console-entry { display: flex; align-items: baseline; gap: 12px; padding: 6px 18px; border-bottom: 1px solid #222e3c; }
 .console-level { width: 40px; flex-shrink: 0; color: #8f9eae; font-size: 11px; text-transform: uppercase; }
 .console-message { flex: 1; min-width: 0; }

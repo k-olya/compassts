@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
+import { OverlayScrollbarsComponent, type OverlayScrollbarsComponentRef } from "overlayscrollbars-react";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
 import { consoleProperties, consoleValueText, isInspectable, type ConsoleProperty } from "./console-values.ts";
@@ -28,12 +29,13 @@ export default function Console({ onNavigate }: { onNavigate: (location: ScriptL
   const entries = useCadStore(state => state.consoleEntries);
   const open = useCadStore(state => state.consoleOpen);
   const close = useCadStore(state => state.closeConsole);
-  const scroll = useRef<HTMLDivElement>(null);
+  const scroll = useRef<OverlayScrollbarsComponentRef>(null);
   const follow = useRef(true);
 
   useEffect(() => {
     if (!open || !entries.length) follow.current = true;
-    if (follow.current && scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
+    const viewport = scroll.current?.osInstance()?.elements().viewport;
+    if (follow.current && viewport) viewport.scrollTop = viewport.scrollHeight;
   }, [entries, open]);
 
   const locationLink = (location: ScriptLocation, key?: number) => (
@@ -51,8 +53,20 @@ export default function Console({ onNavigate }: { onNavigate: (location: ScriptL
         <span>Console <span className="console-caption">Current run</span></span>
         <button type="button" onClick={close} aria-label="Close console" title="Close console"><FiX aria-hidden="true" /></button>
       </div>
-      <div className="console-output" ref={scroll} role="log" aria-label="Console output" tabIndex={0}
-        onScroll={() => { const host = scroll.current!; follow.current = host.scrollHeight - host.scrollTop - host.clientHeight < 24; }}>
+      <OverlayScrollbarsComponent className="console-output" ref={scroll} role="log" aria-label="Console output"
+        options={{ overflow: { x: "scroll", y: "scroll" }, scrollbars: { theme: "os-theme-compass", autoHide: "leave" } }}
+        events={{
+          initialized: instance => {
+            const { viewport } = instance.elements();
+            viewport.tabIndex = 0;
+            viewport.setAttribute("aria-label", "Console output");
+            if (follow.current) viewport.scrollTop = viewport.scrollHeight;
+          },
+          scroll: instance => {
+            const { viewport } = instance.elements();
+            follow.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 24;
+          },
+        }} defer>
         {entries.map(entry => (
           <div className={`console-entry console-${entry.level}`} key={entry.id} role={entry.level === "error" ? "alert" : undefined}>
             <span className="console-level">{entry.level}</span>
@@ -68,7 +82,7 @@ export default function Console({ onNavigate }: { onNavigate: (location: ScriptL
             {entry.location && locationLink(entry.location)}
           </div>
         ))}
-      </div>
+      </OverlayScrollbarsComponent>
     </section>
   );
 }
