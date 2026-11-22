@@ -22,7 +22,7 @@ test("measure returns dimensions and logs once per call through the script conso
   const nativeLog = t.mock.method(console, "log", () => {});
   const entries = [];
   const source = `const part = sketch().add(rectangle({ corner1: center, corner2: { x: 2, y: 3 } })).extrude({ length: 4 });
-const result = measure({ object: part });
+const result = measure(part);
 if (result.volume !== 24 || result.boundingBox.size[2] !== 4) throw new Error("Incorrect solid measurement");
 measure({ object: part.surfaces });
 measure({ object: rectangle({ corner1: center, corner2: { x: 2, y: 3 } }), log: undefined });`;

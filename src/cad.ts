@@ -25,7 +25,7 @@ s.add(
 );
 
 // create a 3d solid by extruding the sketch
-const part = extrude({ sketch: s, length: height })
+const part = s.extrude(height)
   .chamfer({ boundaries: ({ boundary }) => boundary.isLoop() });
 
 // part will not be rendered unless you call scene.add()
@@ -85,7 +85,10 @@ function collectMeshes(scene: Node, positions: Float32Array): RenderedMesh[] {
 
 function scriptBindings(scriptConsole: Console) {
   return { ...compass,
-    measure: (options: Parameters<typeof compass.measure>[0]) => compass.measure({ ...options, log: options.log === undefined ? result => scriptConsole.log(result) : options.log }),
+    measure: (input: Parameters<typeof compass.measure>[0]) => {
+      const options = "object" in input ? input : { object: input };
+      return compass.measure({ ...options, log: options.log === undefined ? result => scriptConsole.log(result) : options.log });
+    },
     glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
 }
 

@@ -290,7 +290,7 @@ chamfers its four hole rims using
 `.chamfer({ boundaries: ({ boundary }) => boundary.isLoop() })` with the default
 length and angle.
 
-Constructors take named options objects, such as `new Circle({ center, radius })`
+Constructors accept named options objects, such as `new Circle({ center, radius })`
 and `new TransformMat4({ matrix })`. Their lowercase shorthands use the same
 options, for example `circle({ center, radius })` and `sketch()`. Use
 `transformMat4Node({ matrix })` for the matrix-node shorthand; `transformMat4`
@@ -459,3 +459,18 @@ import { cuboid, cylinder, cylinderElliptic, sphere, torus } from './primitives.
 scene.add(cuboid({ width: 20, depth: 12, height: 8 }));
 scene.add(sphere({ radius: 5 }).displace({ vector: [25, 0, 0] }));
 ```
+
+Selected libcompass APIs also accept their required argument directly:
+`circle(5)`, `svgPath(d)`, `polyline(points)`, `planarCurve(at)`, `spatialCurve(at)`,
+`spatialSurface(at)`, `face(boundaries)`, `solid(surfaces)`, `measure(part)`,
+`annotate(part)`, `chamfer(part)`, `round(part)`, and `searchBoundaries(part)`.
+Their options forms remain available for additional settings. Matching constructors
+accept the same values, for example `new Circle(5)` and `new Solid(surfaces)`.
+
+Sketch methods support `s.extrude(10)` and `s.extrudeAlongCurve(path)`. Solids
+support `part.intersect(tool)` and `part.difference(tool)`. Planar curves support
+`curve.contains(point)`, and lifting supports `SpatialCurve.fromPlanarCurve(curve)`.
+Every supported spatial object's `.displace(vector)` accepts an ordinary or typed
+XYZ vector. Standalone extrusion still takes both a sketch and length in options.
+The default example and primitives module use these direct forms where applicable;
+tool templates continue to expose options for customization.
