@@ -185,7 +185,9 @@ it to the scene instead of the original. The instance form is
 `part.chamfer({ length: 0.5, angle: 45, boundaries: [] })`; `part.chamfer()` uses
 all defaults. Both forms return a new solid. Length is the setback on the first
 adjoining surface in `solid.surfaces` order, and angle is in degrees. Convex
-planar edges and smooth closed curved rims (including holes) are supported;
+planar edges and smooth closed rims combining tangent lines and curves are supported,
+including holes. Convex bevels remove material, while concave bevels add material
+around pocket floors. A top-face selector can bevel both the lips and the floor;
 unsupported corner or surface intersections report errors in the console.
 
 Chamfer and Round accept one boundary selector or a mixed list of original indices, boundary objects,
