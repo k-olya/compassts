@@ -1,5 +1,4 @@
 import { useEffect, useId, useState } from "react";
-import { FiPlay, FiSliders } from "react-icons/fi";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import { hasUnrenderedChanges, useCadStore } from "./store.ts";
 import type { ParametricControl } from "./parametric.ts";
@@ -23,8 +22,7 @@ export default function ParametricControls() {
   const setParameter = useCadStore(state => state.setParameter);
   const prefix = useId();
   if (!controls.length) return null;
-  return <section className="parametric-controls" aria-label="Parameters">
-    <div className="parametric-header"><FiSliders aria-hidden="true" /><span>Parameters</span></div>
+  return <section id="parameters-widget" className="parametric-controls" aria-label="Parameters">
     <OverlayScrollbarsComponent className="parametric-body" options={{ scrollbars: { theme: "os-theme-compass", autoHide: "leave" } }} defer>
       {controls.map((control, index) => {
         const id = `${prefix}-${index}`;
@@ -45,8 +43,8 @@ export default function ParametricControls() {
         </div>;
       })}
     </OverlayScrollbarsComponent>
-    {(changed || error) && <div className="parametric-footer"><button type="button" className="render-button" onClick={render} disabled={rendering}>
-      <FiPlay aria-hidden="true" />{rendering ? 'Rendering…' : 'Render'}
-    </button></div>}
+    <div className="parametric-footer"><button type="button" className="render-button" onClick={render} disabled={rendering || (!changed && !error)}>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11L13 8z" /></svg>{rendering ? 'Rendering…' : 'Render'}
+    </button></div>
   </section>;
 }

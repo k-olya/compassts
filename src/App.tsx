@@ -173,6 +173,7 @@ export default function App() {
   const [editorLocation, setEditorLocation] = useState<ScriptLocation | null>(null);
   const [orthographic, setOrthographic] = useState(false);
   const [docsOpen, setDocsOpen] = useState(false);
+  const [parametersHidden, setParametersHidden] = useState(false);
   const { files, activeFile, rendering, rendered, error, render, exportStl, resolution, setResolution } = useCadStore();
   const editor = useRef<EditorHandle>(null);
   const resolutionInput = useRef<HTMLInputElement>(null);
@@ -261,7 +262,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-            <div className="viewer-body"><Viewer orthographic={orthographic} /><ParametricControls /><span className="viewer-hint">Drag / Alt + move to orbit · Scroll to zoom · Right-drag / Shift + move to pan</span></div>
+            <div className="viewer-body"><Viewer orthographic={orthographic} />{!parametersHidden && <ParametricControls />}<span className="viewer-hint">Drag / Alt + move to orbit · Scroll to zoom · Right-drag / Shift + move to pan</span></div>
           </section>
           <section id="docs-pane" className="pane docs-pane" aria-label="API documentation" hidden={!docsOpen}>
             <div className="pane-header"><span>API docs</span><span className="pane-note">Compassts &amp; libcompass</span></div>
@@ -270,11 +271,14 @@ export default function App() {
         </div>
         <SideToolbar label="Rendered view tools">
           <ToolbarSection label="View">
+            <button type="button" onClick={() => setViewExpanded(expanded => !expanded)} aria-label={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} title={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} aria-pressed={viewExpanded} aria-controls="code-pane">
+              {viewExpanded ? <FiMinimize aria-hidden="true" /> : <FiMaximize aria-hidden="true" />}
+            </button>
             <button type="button" aria-label="Documentation" title={docsOpen ? "Show 3D view" : "Browse API documentation"} aria-pressed={docsOpen} aria-controls="docs-pane" onClick={() => setDocsOpen(open => !open)}>
               <FiBookOpen aria-hidden="true" />
             </button>
-            <button type="button" onClick={() => setViewExpanded(expanded => !expanded)} aria-label={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} title={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} aria-pressed={viewExpanded} aria-controls="code-pane">
-              {viewExpanded ? <FiMinimize aria-hidden="true" /> : <FiMaximize aria-hidden="true" />}
+            <button type="button" aria-label={parametersHidden ? "Show parameters" : "Hide parameters"} title={parametersHidden ? "Show parameters" : "Hide parameters"} aria-pressed={parametersHidden} aria-controls="parameters-widget" onClick={() => setParametersHidden(hidden => !hidden)}>
+              <ParametricIcon aria-hidden="true" />
             </button>
           </ToolbarSection>
         </SideToolbar>
