@@ -4,12 +4,12 @@ import { DEFAULT_CODE, evaluateCode, evaluateProject, exportBinaryStl, type Rend
 import { errorEntry, type ConsoleEntry } from "./script-console.ts";
 import { PRIMITIVES_CODE } from "./primitives-example.ts";
 import { fetchScriptFile, MAIN_FILE, projectSource, scriptName, type ScriptFile } from "./script-files.ts";
-import { readProject } from "./project-archive.ts";
+import { readProject, readWebProject } from "./project-archive.ts";
 
 interface CadState {
   projectName: string;
   setProjectName: (name: string) => void;
-  loadProject: (data: Uint8Array) => Promise<void>;
+  loadProject: (data: Uint8Array | string, signal?: AbortSignal) => Promise<void>;
   code: string;
   files: ScriptFile[];
   activeFile: string;
@@ -46,8 +46,9 @@ initialRendered.projectSource = projectSource(initialFiles);
 export const useCadStore = create<CadState>((set, get) => ({
   projectName: '',
   setProjectName: projectName => set({ projectName }),
-  loadProject: async data => {
-    const project = await readProject(data);
+  loadProject: async (data, signal) => {
+    const project = await (typeof data === 'string' ? readWebProject(data, signal) : readProject(data, signal));
+    signal?.throwIfAborted();
     projectVersion++; activeRun++;
     pending?.abort(); pending = undefined;
     disposeRuntime?.(); disposeRuntime = undefined;

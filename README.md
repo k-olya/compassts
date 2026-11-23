@@ -467,6 +467,22 @@ original name and effective URL after redirects; their code is excluded from the
 archive and fetched again from the original URL when loading. Archives and their
 expanded script contents are limited to 64 MiB.
 
+Open a hosted project with `?url=` followed by its URL encoded with
+`encodeURIComponent`, for example:
+
+```text
+https://your-compassts-host/?url=https%3A%2F%2Fexample.com%2Fmodels%2Fproject.json
+```
+
+The app first shows a trust-confirmation dialog with a clickable source URL.
+Cancel or Escape leaves the current project intact and makes no project requests.
+After **Trust and load**, it fetches either a `.cts` ZIP or an unpacked
+`project.json` in the same format above. Unpacked local filenames are resolved
+relative to the manifest's directory, including after redirects; they stay
+editable. External URL libraries are fetched read-only. The servers must permit
+browser requests through CORS. Loading does not execute project scripts; press
+Render when ready.
+
 The default project also includes an editable `primitives.js` module, built with
 sketches, extrusion, and rounding. Its five named exports take options objects:
 

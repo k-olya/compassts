@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { readProject, writeProject } from '../src/project-archive.ts';
+import { MAX_PROJECT_BYTES, projectUrl, readProject, readWebProject, writeProject } from '../src/project-archive.ts';
 
 const localFiles = [
   { name: 'model.js', source: 'import { size } from "./parts/尺寸.js";\nconsole.log(size);' },
@@ -12,6 +12,71 @@ const archive = (manifest, scripts = { 'model.js': '' }) => zipSync(Object.fromE
   ['project.json', strToU8(JSON.stringify(manifest))],
   ...Object.entries(scripts).map(([name, source]) => [name, strToU8(source)]),
 ]));
+const response = (body, url, init) => Object.defineProperty(new Response(body, init), 'url', { value: url });
+
+test('web loading detects packed projects, preserves URL query strings and reloads external libraries', async t => {
+  const url = 'https://example.com/download?file=test.cts&signature=a%2Bb';
+  const requests = [];
+  t.mock.method(globalThis, 'fetch', async input => {
+    requests.push(input);
+    if (input === url) return response(writeProject('Packed web project', [...localFiles, remote]), url);
+    assert.equal(input, remote.name);
+    return response('var external = 43;', remote.url);
+  });
+  const project = await readWebProject(url);
+  assert.equal(project.name, 'Packed web project');
+  assert.deepEqual(project.files, [...localFiles, { ...remote, source: 'var external = 43;' }]);
+  assert.deepEqual(requests, [url, remote.name]);
+});
+
+test('unpacked projects resolve nested editable scripts beside the redirected manifest and can be saved as .cts', async t => {
+  const url = 'https://example.com/project.json', base = 'https://cdn.example.com/models/demo/project.json';
+  const manifest = { version: 1, name: 'Unpacked web project', files: [
+    { name: localFiles[1].name }, { name: remote.name, url: remote.url }, { name: 'model.js' },
+  ] };
+  const requests = [];
+  const routes = new Map([
+    [url, () => response(JSON.stringify(manifest), base)],
+    ['https://cdn.example.com/models/demo/model.js', () => response(localFiles[0].source, base)],
+    ['https://cdn.example.com/models/demo/parts/%E5%B0%BA%E5%AF%B8.js', () => response(localFiles[1].source, base)],
+    [remote.name, () => response(remote.source, remote.url)],
+  ]);
+  t.mock.method(globalThis, 'fetch', async input => { requests.push(input); assert.ok(routes.has(input), input); return routes.get(input)(); });
+  const { useCadStore } = await import('../src/store.ts');
+  await useCadStore.getState().loadProject(url);
+  const project = useCadStore.getState();
+  assert.equal(project.projectName, manifest.name);
+  assert.deepEqual(project.files, [localFiles[0], localFiles[1], remote]);
+  assert.equal(project.activeFile, 'model.js'); assert.equal(project.rendered.positions.length, 0);
+  assert.equal(requests.length, 4);
+  const saved = unzipSync(writeProject(project.projectName, project.files));
+  assert.equal(strFromU8(saved['model.js']), localFiles[0].source);
+  assert.equal(strFromU8(saved['parts/尺寸.js']), localFiles[1].source);
+  assert.equal(Object.keys(saved).length, 3);
+});
+
+test('invalid URLs and unpacked projects fail without replacing the active project', async t => {
+  const { useCadStore } = await import('../src/store.ts');
+  const previous = useCadStore.getState(), requests = [];
+  t.mock.method(globalThis, 'fetch', async input => {
+    requests.push(input);
+    if (input.endsWith('/http-error')) return response('', input, { status: 404 });
+    if (input.endsWith('/oversized')) return response('', input, { headers: { 'content-length': String(MAX_PROJECT_BYTES + 1) } });
+    if (input.endsWith('/invalid')) return response(JSON.stringify({ version: 1, name: 'Bad', files: [{ name: '../model.js' }] }), input);
+    if (input.endsWith('/project.json')) return response(JSON.stringify({ version: 1, name: 'Missing', files: [{ name: 'model.js' }] }), input);
+    return response('', input, { status: 404 });
+  });
+  for (const input of ['', 'javascript:alert(1)', 'data:text/plain,test', 'file:///project.json', '/project.json']) {
+    assert.throws(() => projectUrl(input), /HTTP\(S\)/);
+    await assert.rejects(() => previous.loadProject(input), /HTTP\(S\)/);
+  }
+  assert.equal(requests.length, 0);
+  for (const path of ['http-error', 'oversized', 'invalid', 'project.json']) {
+    await assert.rejects(() => previous.loadProject(`https://example.com/${path}`));
+    assert.equal(useCadStore.getState(), previous);
+  }
+  assert.equal(requests.filter(url => url.endsWith('/model.js')).length, 1);
+});
 
 test('.cts stores local sources and ordered URL references, and reloads external libraries', async t => {
   const fetch = t.mock.method(globalThis, 'fetch', async url => ({ ok: true, url: remote.url, text: async () => {
