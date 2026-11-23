@@ -15,6 +15,7 @@
   "dependencies": {
     "acorn": "^8.15.0",
     "dompurify": "^3.2.7",
+    "fflate": "^0.8.3",
     "gl-matrix": "^3.4.4",
     "libcompass": "file:../libcompass",
     "marked": "^14.0.0",

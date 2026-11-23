@@ -438,6 +438,32 @@ Computed dynamic imports currently report an explicit error. Console links and
 evaluation markers identify the originating file and open it in the editor.
 Project changes take effect when Render runs, regardless of which file is selected.
 
+Edit the project name beside the compass branding. The save icon downloads
+`<project name>.cts`; the folder icon opens a saved project. You can also drop a
+`.cts` file anywhere in the app. Loading opens `model.js` and clears the old preview
+and console; press Render to run the loaded project. Invalid archives or failed
+URL requests leave the current project intact.
+
+A `.cts` file is a standard ZIP containing every editable JavaScript file at its
+relative path and a `project.json` manifest:
+
+```json
+{
+  "version": 1,
+  "name": "My project",
+  "files": [
+    { "name": "model.js" },
+    { "name": "primitives.js" },
+    { "name": "https://example.com/library.js", "url": "https://example.com/library.js" }
+  ]
+}
+```
+
+File order is preserved for classic external scripts. URL entries retain their
+original name and effective URL after redirects; their code is excluded from the
+archive and fetched again from the original URL when loading. Archives and their
+expanded script contents are limited to 64 MiB.
+
 The default project also includes an editable `primitives.js` module, built with
 sketches, extrusion, and rounding. Its five named exports take options objects:
 

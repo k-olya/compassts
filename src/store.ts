@@ -4,8 +4,12 @@ import { DEFAULT_CODE, evaluateCode, evaluateProject, exportBinaryStl, type Rend
 import { errorEntry, type ConsoleEntry } from "./script-console.ts";
 import { PRIMITIVES_CODE } from "./primitives-example.ts";
 import { fetchScriptFile, MAIN_FILE, projectSource, scriptName, type ScriptFile } from "./script-files.ts";
+import { readProject } from "./project-archive.ts";
 
 interface CadState {
+  projectName: string;
+  setProjectName: (name: string) => void;
+  loadProject: (data: Uint8Array) => Promise<void>;
   code: string;
   files: ScriptFile[];
   activeFile: string;
@@ -31,6 +35,7 @@ interface CadState {
 let activeRun = 0;
 let pending: AbortController | undefined;
 let disposeRuntime: (() => void) | undefined;
+let projectVersion = 0;
 const initialFiles = [
   { name: MAIN_FILE, source: DEFAULT_CODE },
   { name: "primitives.js", source: PRIMITIVES_CODE },
@@ -39,6 +44,16 @@ const initialRendered = evaluateCode(DEFAULT_CODE);
 initialRendered.projectSource = projectSource(initialFiles);
 
 export const useCadStore = create<CadState>((set, get) => ({
+  projectName: '',
+  setProjectName: projectName => set({ projectName }),
+  loadProject: async data => {
+    const project = await readProject(data);
+    projectVersion++; activeRun++;
+    pending?.abort(); pending = undefined;
+    disposeRuntime?.(); disposeRuntime = undefined;
+    set({ projectName: project.name, files: project.files, activeFile: MAIN_FILE, code: project.files[0].source,
+      rendered: evaluateCode(''), rendering: false, error: null, evaluationError: null, consoleEntries: [], consoleOpen: false });
+  },
   code: DEFAULT_CODE,
   files: initialFiles,
   activeFile: MAIN_FILE,
@@ -48,9 +63,11 @@ export const useCadStore = create<CadState>((set, get) => ({
     if (file) set({ activeFile: name, code: file.source });
   },
   addFile: async input => {
+    const version = projectVersion;
     const name = scriptName(input);
     if (get().files.some(file => file.name === name)) throw new Error('A file with this name already exists.');
     const file = /^https?:\/\//i.test(name) ? await fetchScriptFile(name) : { name, source: '' };
+    if (version !== projectVersion) return;
     if (get().files.some(file => file.name === name)) throw new Error('A file with this name already exists.');
     set(state => ({ files: [...state.files, file], activeFile: name, code: file.source }));
   },

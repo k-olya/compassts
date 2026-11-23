@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { FiBookOpen, FiChevronDown, FiChevronUp, FiMaximize, FiMinimize } from "react-icons/fi";
 import Docs from "./Docs.tsx";
 import FilePicker from "./FilePicker.tsx";
+import ProjectControls from "./ProjectControls.tsx";
 import { MAIN_FILE, projectSource } from "./script-files.ts";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
@@ -178,7 +179,7 @@ export default function App() {
     <main className="workspace">
       <header className="toolbar">
         <div className="brand"><span className="brand-mark" aria-hidden="true">⌖</span>compass<span className="brand-suffix">ts</span></div>
-        <span className="toolbar-caption">Code-based CAD</span>
+        <ProjectControls />
         <nav className="toolbar-actions" aria-label="Model actions">
           <button className="render-button" onClick={render} title="Render (Ctrl/Cmd + Enter)">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11L13 8z" /></svg>
