@@ -161,7 +161,7 @@ stay unchanged. A point shared by more than two segments or a segment too short
 for its incident rounds produces an error. Straight joins stay straight. At the
 radius limit, fully consumed segments disappear and adjoining arcs share the same
 point. Pass the array directly to `s.add(...)`, or spread it into an element list.
-During extrusion, smoothly connected open planar curves join into exact piecewise
+During extrusion, smoothly connected open planar curves and line segments join into exact piecewise
 curves, removing unnecessary wall seams without changing the sketch. Joined runs
 may stay open or form loops; existing closed curves stay separate. Four quarter
 arcs forming a circle therefore extrude as a single cylindrical wall and can be
@@ -170,6 +170,9 @@ rounded into a sphere. This can change boundary indices for affected profiles.
 The Round tool inserts `round({ solid: part, radius: 0.5, boundaries: [] })`.
 It creates a new solid with tangent constant-radius rounds; `part.round(options)`
 is the method form. An omitted or empty boundary list selects every original boundary.
+Smooth closed rims can combine tangent straight and curved sections, such as a
+rounded rectangle. Convex rims remove material, while concave rims add material
+at pocket floors; a top-face selector can round both the lip and the floor of a blind pocket.
 Rounds remain mathematical surfaces, including spherical corners. At the radius
 limit, consumed faces disappear so cylinders can become spheres, hollow cylinders
 can become tori, and four parallel cube rounds can become a cylinder. Unresolved
