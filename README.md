@@ -502,7 +502,9 @@ Project changes take effect when Render runs, regardless of which file is select
 
 Edit the project name beside the compass branding. The save icon downloads
 `<project name>.cts`; the folder icon opens a saved project. You can also drop a
-`.cts` file anywhere in the app. Loading opens `model.js` and clears the old preview
+`.cts` or plain `.js` file anywhere in the app, or select either with the folder icon.
+A plain script becomes an editable project containing only `model.js`, with its
+original filename (without `.js`) as the project name. Loading opens `model.js` and clears the old preview
 and console; press Render to run the loaded project. Invalid archives or failed
 URL requests leave the current project intact.
 
@@ -535,8 +537,11 @@ https://your-compassts-host/?url=https%3A%2F%2Fexample.com%2Fmodels%2Fproject.js
 
 The app first shows a trust-confirmation dialog with a clickable source URL.
 Cancel or Escape leaves the current project intact and makes no project requests.
-After **Trust and load**, it fetches either a `.cts` ZIP or an unpacked
-`project.json` in the same format above. Unpacked local filenames are resolved
+After **Trust and load**, it fetches a `.cts` ZIP, an unpacked
+`project.json` in the same format above, or a plain `.js` script. Plain scripts
+become editable single-file `model.js` projects, just like local scripts; URLs
+without a `.js` filename can identify scripts with a JavaScript content type.
+Unpacked local filenames are resolved
 relative to the manifest's directory, including after redirects; they stay
 editable. External URL libraries are fetched read-only. The servers must permit
 browser requests through CORS. Loading does not execute project scripts; press

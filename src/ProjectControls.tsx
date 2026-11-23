@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiFolder, FiSave } from 'react-icons/fi';
-import { MAX_PROJECT_BYTES, projectUrl, writeProject } from './project-archive.ts';
+import { projectUrl, writeProject } from './project-archive.ts';
 import { useCadStore } from './store.ts';
 
 export default function ProjectControls() {
@@ -28,12 +28,7 @@ export default function ProjectControls() {
     if (opening.current) return;
     opening.current = true; setLoading(true); setError('');
     try {
-      if (typeof file === 'string') await loadProject(file);
-      else {
-        if (!/\.cts$/i.test(file.name)) throw new Error('Choose a .cts project file.');
-        if (file.size > MAX_PROJECT_BYTES) throw new Error('Project archives must be 64 MiB or smaller.');
-        await loadProject(new Uint8Array(await file.arrayBuffer()));
-      }
+      await loadProject(file);
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { opening.current = false; setLoading(false); }
   }, [loadProject]);
@@ -49,7 +44,7 @@ export default function ProjectControls() {
       event.preventDefault(); event.stopPropagation(); depth = 0; setDragging(false);
       if (dialog.current?.open) return;
       const files = event.dataTransfer!.files;
-      if (files.length !== 1) setError('Drop one .cts project file at a time.');
+      if (files.length !== 1) setError('Drop one .cts or .js project file at a time.');
       else void open(files[0]);
     };
     window.addEventListener('dragenter', enter, true);
@@ -81,14 +76,14 @@ export default function ProjectControls() {
       onChange={event => setProjectName(event.target.value)} onBlur={() => setProjectName(projectName.trim())}
       onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} />
     <button type="button" className="project-action" aria-label="Save project" title="Save project (.cts)" disabled={loading} onClick={save}><FiSave aria-hidden="true" /></button>
-    <button type="button" className="project-action" aria-label="Load project" title="Load project (.cts), or drop a file here" disabled={loading} onClick={() => input.current?.click()}><FiFolder aria-hidden="true" /></button>
-    <input ref={input} type="file" accept=".cts" hidden aria-label="Project file" onChange={event => {
+    <button type="button" className="project-action" aria-label="Load project" title="Load project (.cts or .js), or drop a file here" disabled={loading} onClick={() => input.current?.click()}><FiFolder aria-hidden="true" /></button>
+    <input ref={input} type="file" accept=".cts,.js" hidden aria-label="Project file" onChange={event => {
       const file = event.currentTarget.files?.[0]; event.currentTarget.value = '';
       if (file) void open(file);
     }} />
     {loading && <span className="project-loading" role="status">Loading…</span>}
     {error && <div className="project-error" role="alert">{error}</div>}
-    {dragging && <div className="project-drop-hint">Drop a .cts project to open</div>}
+    {dragging && <div className="project-drop-hint">Drop a .cts or .js project to open</div>}
     <dialog ref={dialog} className="project-dialog" aria-labelledby="web-project-title" aria-describedby="web-project-description" onCancel={() => setRequestedUrl(null)}>
       <h2 id="web-project-title">Do you trust this project URL?</h2>
       <p id="web-project-description">Only load projects from sources you trust. Project scripts can access this page when you press Render.</p>

@@ -54,6 +54,20 @@ export async function readProject(data: Uint8Array, signal?: AbortSignal): Promi
   return loadFiles(manifest, name => strFromU8(entries[name]), signal);
 }
 
+function scriptProject(data: Uint8Array, filename: string): Project {
+  return { name: filename.replace(/\.js$/i, '') || 'Untitled', files: [{ name: MAIN_FILE, source: strFromU8(data) }] };
+}
+
+/** Open a local archive or an editable single-script project. */
+export async function readProjectFile(file: File, signal?: AbortSignal): Promise<Project> {
+  if (!/\.(cts|js)$/i.test(file.name)) throw new Error('Choose a .cts or .js project file.');
+  if (file.size > MAX_PROJECT_BYTES) throw new Error('Projects must be 64 MiB or smaller.');
+  signal?.throwIfAborted();
+  const data = new Uint8Array(await file.arrayBuffer());
+  signal?.throwIfAborted();
+  return /\.js$/i.test(file.name) ? scriptProject(data, file.name) : readProject(data, signal);
+}
+
 function readManifest(input: unknown): Manifest {
   const manifest = input as {
     version?: unknown; name?: unknown; files?: unknown;
@@ -91,7 +105,7 @@ async function loadFiles(manifest: Manifest, localSource: (name: string) => stri
   return { name: manifest.name, files: [loaded.find(file => file.name === MAIN_FILE)!, ...loaded.filter(file => file.name !== MAIN_FILE)] };
 }
 
-/** Load a ZIP or a manifest, resolving editable scripts beside the final manifest URL. */
+/** Load a ZIP, manifest or single script; resolve manifest files beside its final URL. */
 export async function readWebProject(input: string, signal?: AbortSignal): Promise<Project> {
   const url = projectUrl(input);
   const response = await fetch(url.href, { signal });
@@ -99,9 +113,14 @@ export async function readWebProject(input: string, signal?: AbortSignal): Promi
   if (Number(response.headers.get('content-length')) > MAX_PROJECT_BYTES) throw new Error('Projects must be 64 MiB or smaller.');
   const data = new Uint8Array(await response.arrayBuffer());
   if (data.byteLength > MAX_PROJECT_BYTES) throw new Error('Projects must be 64 MiB or smaller.');
+  signal?.throwIfAborted();
   if (data[0] === 0x50 && data[1] === 0x4b) return readProject(data, signal);
-  const manifest = readManifest(JSON.parse(strFromU8(data)));
   const base = projectUrl(response.url || url.href);
+  if (/\.js$/i.test(url.pathname) || /\.js$/i.test(base.pathname) || /^(?:text|application)\/(?:x-)?(?:javascript|ecmascript)(?:;|$)/i.test(response.headers.get('content-type') || '')) {
+    const sourceUrl = /\.js$/i.test(base.pathname) ? base : url;
+    return scriptProject(data, decodeURIComponent(sourceUrl.pathname.split('/').pop() || MAIN_FILE));
+  }
+  const manifest = readManifest(JSON.parse(strFromU8(data)));
   let expanded = data.byteLength;
   return loadFiles(manifest, async name => {
     const file = await fetchScriptFile(new URL(name.split('/').map(encodeURIComponent).join('/'), base).href, signal);

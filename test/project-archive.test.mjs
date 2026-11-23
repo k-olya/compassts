@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { MAX_PROJECT_BYTES, projectUrl, readProject, readWebProject, writeProject } from '../src/project-archive.ts';
+import { MAX_PROJECT_BYTES, projectUrl, readProject, readProjectFile, readWebProject, writeProject } from '../src/project-archive.ts';
 
 const localFiles = [
   { name: 'model.js', source: 'import { size } from "./parts/尺寸.js";\nconsole.log(size);' },
@@ -13,6 +13,45 @@ const archive = (manifest, scripts = { 'model.js': '' }) => zipSync(Object.fromE
   ...Object.entries(scripts).map(([name, source]) => [name, strToU8(source)]),
 ]));
 const response = (body, url, init) => Object.defineProperty(new Response(body, init), 'url', { value: url });
+
+test('local scripts become editable single-file projects and can be saved as archives', async () => {
+  const { useCadStore } = await import('../src/store.ts');
+  const source = '// 尺寸 ✓\nscene.add(sketch().add(circle(3)).extrude(2));';
+  const file = new File([source], 'My part.JS', { type: 'text/javascript' });
+  await useCadStore.getState().loadProject(file);
+  const state = useCadStore.getState();
+  assert.equal(state.projectName, 'My part');
+  assert.deepEqual(state.files, [{ name: 'model.js', source }]);
+  assert.equal(state.activeFile, 'model.js'); assert.equal(state.code, source);
+  assert.equal(state.rendered.positions.length, 0);
+  assert.deepEqual(await readProject(writeProject(state.projectName, state.files)), { name: 'My part', files: state.files });
+  assert.deepEqual(await readProjectFile(new File([writeProject('Archive', localFiles)], 'part.cts')), { name: 'Archive', files: localFiles });
+  await assert.rejects(() => state.loadProject(new File(['bad'], 'part.txt')), /\.cts or \.js/);
+  assert.equal(useCadStore.getState(), state);
+  await assert.rejects(() => readProjectFile({ name: 'big.js', size: MAX_PROJECT_BYTES + 1 }), /64 MiB/);
+});
+
+test('web scripts load from original or redirected filenames and JavaScript content types without execution', async t => {
+  const source = 'throw new Error("Only run after Render"); // ✓';
+  for (const [url, finalUrl, headers, name] of [
+    ['https://example.com/My%20part.JS?token=a%2Bb', 'https://cdn.example.com/download', {}, 'My part'],
+    ['https://example.com/download', 'https://cdn.example.com/remote.js', {}, 'remote'],
+    ['https://example.com/script?id=1', '', { 'content-type': 'text/javascript; charset=utf-8' }, 'script'],
+  ]) {
+    const mock = t.mock.method(globalThis, 'fetch', async input => {
+      assert.equal(input, url);
+      return response(source, finalUrl, { headers });
+    });
+    const { useCadStore } = await import('../src/store.ts');
+    await useCadStore.getState().loadProject(url);
+    const state = useCadStore.getState();
+    assert.equal(state.projectName, name);
+    assert.deepEqual(state.files, [{ name: 'model.js', source }]);
+    assert.equal(state.error, null); assert.equal(state.rendered.positions.length, 0);
+    assert.equal(mock.mock.callCount(), 1);
+    mock.mock.restore();
+  }
+});
 
 test('web loading detects packed projects, preserves URL query strings and reloads external libraries', async t => {
   const url = 'https://example.com/download?file=test.cts&signature=a%2Bb';
