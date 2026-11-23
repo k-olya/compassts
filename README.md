@@ -8,7 +8,7 @@ The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
 surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
 `polyline`, `roundPolyline`, `rectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
 `trimCurve` calls. Solid tools insert `extrude`,
-`extrudeAlongCurve`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
+`extrudeAlongCurve`, `extrudeRotate`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
 `trimSurface`. Helpers contains Annotate, Spatial line, Plane, Rotate, and Displace; Arrays
 contains Displacement array and Rotation array. Each tool inserts an options
@@ -351,6 +351,22 @@ Open paths have caps; smoothly closed paths have no caps or seam edges. Corners,
 cusps, folds, and detected self-intersections throw and appear in the console.
 Checks use the library resolution and cannot certify hidden oscillations.
 
+The Solid tools' Extrude rotate button inserts
+`extrudeRotate({ sketch: s, axis: Y, angle: 360 })`. It revolves the sketch in its
+actual world-space position about a coplanar spatial line, using its origin and
+normalized direction. Signed angles use degrees and default to a full circle;
+`0 < abs(angle) <= 360`. Full turns have no caps or seam edges, while partial
+turns have planar caps. A circle offset from a coplanar axis produces a torus;
+a diamond produces four conical walls sharing circular ridges. Use
+`s.extrudeRotate({ axis: Y, angle: -90 })` for a reverse quarter turn, or
+`s.extrudeRotate(Y)` for the full turn. Profiles, holes and islands must lie
+on one side of the axis, with contact allowed. Axis edges produce no wall, and
+stationary points become shared poles, so a rectangle against the axis makes a
+solid cylinder and a semicircle makes a sphere. Partial-turn end caps share their
+axis edges. Crossing/noncoplanar axes or nonmanifold pinches still throw.
+Mathematical surfaces and sampling overrides are preserved, and the returned
+solid has shared boundaries suitable for further operations.
+
 `SpatialSurface({ at, ... })` now supports general and periodic parametric
 surfaces. Use `RuledSurface({ start, end, ... })` or `ruledSurface(...)` for the
 previous rim/apex constructor. Surfaces expose physical `boundaryLoops`;
@@ -528,7 +544,7 @@ Selected libcompass APIs also accept their required argument directly:
 Their options forms remain available for additional settings. Matching constructors
 accept the same values, for example `new Circle(5)` and `new Solid(surfaces)`.
 
-Sketch methods support `s.extrude(10)` and `s.extrudeAlongCurve(path)`. Solids
+Sketch methods support `s.extrude(10)`, `s.extrudeAlongCurve(path)`, and `s.extrudeRotate(Y)`. Solids
 support `part.intersect(tool)` and `part.difference(tool)`. Planar curves support
 `curve.contains(point)`, and lifting supports `SpatialCurve.fromPlanarCurve(curve)`.
 Every supported spatial object's `.displace(vector)` accepts an ordinary or typed

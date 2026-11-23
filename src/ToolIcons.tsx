@@ -111,6 +111,15 @@ export function SweepIcon() {
   </ToolIcon>;
 }
 
+export function ExtrudeRotateIcon() {
+  return <ToolIcon>
+    <path d="M12 2v20" opacity="0.45" strokeDasharray="2 2" />
+    <path d="M17 7c3 1 5 3 5 5s-2 4-5 5M7 7c-3 1-5 3-5 5s2 4 5 5" />
+    <ellipse cx="17" cy="12" rx="2.5" ry="5" fill="currentColor" fillOpacity="0.16" />
+    <path d="m5 14 2 3-3 1" />
+  </ToolIcon>;
+}
+
 export function ChamferIcon() {
   return <ToolIcon>
     <path d="M3 8.5 11 4l6 3.5-8 4.5Z" fill="currentColor" fillOpacity="0.08" />
