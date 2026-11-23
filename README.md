@@ -108,9 +108,11 @@ construction lines. Infinite objects and arbitrary nodes are rejected, and solid
 children are excluded. Empty geometry has null bounds and zero area/volume.
 
 The Arrays category inserts `displacementArray({ object, vector, N, offset, width })`
-or `rotationArray({ object, axis, N, offset, width })`. The final snippet choice
+or `rotationArray({ object, axis, N, offset, width })`, or
+`curveArray({ object, curve, follow, N, offset, width })`. The final snippet choice
 selects which parameters to supply: exactly two of `N`, `offset`, `width`, with
-rotation also accepting only `N` or only `offset` for a full circle. Spacing is
+rotation also accepting only `N` or only `offset` for a full circle, and curve
+arrays for the full path length. Spacing is
 in model units along a normalized vector for displacement, or signed degrees
 around a spatial line for rotation. `width = N * offset`; width 10 and offset 5
 make two copies, at 0 and 5. Computed counts round down for non-divisible widths.
@@ -123,6 +125,18 @@ const row = displacementArray({ object: part, vector: X, N: 4, offset: 10 });
 const grid = displacementArray({ object: row, vector: Y, N: 3, offset: 10 });
 scene.add(grid);
 ```
+
+Array along curve uses arc-length spacing in model units along a smooth spatial
+curve. Supplying only `N` or `offset` uses the whole sampled path length; explicit
+width must fit on the path. Negative spacing starts at the end and travels
+backward. Each copy's world origin lies on the curve. The API defaults to
+`follow: false`, preserving orientation; the toolbar inserts `follow: true`
+explicitly, with local Z following the tangent and X/Y transported with minimal
+twist, as in `extrudeAlongCurve`.
+Positions use the original curve equations; length estimates respect its
+`sample()` method at the current resolution. Corners, cusps and unresolved frames
+throw with `follow: true`. The default mode accepts corners without evaluating tangents.
+Closed paths exclude a duplicate at the endpoint.
 
 The Ellipse tool inserts `ellipse({ center, radiusX, radiusY, rotation })`.
 The radii are positive semi-axis lengths, and rotation is counterclockwise in

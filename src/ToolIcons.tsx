@@ -84,6 +84,15 @@ export function RotationArrayIcon() {
   </ToolIcon>;
 }
 
+export function CurveArrayIcon() {
+  return <ToolIcon>
+    <path d="M3 19C3 4 21 20 21 5" opacity="0.45" />
+    <rect x="1" y="16" width="4" height="5" rx="0.5" fill="currentColor" fillOpacity="0.2" />
+    <path d="m8 10 4 2-2 4-4-2Zm7 0 4 2-2 4-4-2Z" />
+    <rect x="19" y="3" width="4" height="5" rx="0.5" />
+  </ToolIcon>;
+}
+
 export function ExtrudeIcon() {
   return <ToolIcon>
     <path d="m2 10 6.5-3.5L15 10l-6.5 3.5Z" fill="currentColor" fillOpacity="0.2" />

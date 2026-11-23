@@ -7,7 +7,7 @@ import { MAIN_FILE, projectSource } from "./script-files.ts";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { AnnotateIcon, MeasureIcon, DisplacementArrayIcon, RotationArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { AnnotateIcon, MeasureIcon, DisplacementArrayIcon, RotationArrayIcon, CurveArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -124,6 +124,10 @@ const toolSections = {
     {
       label: "Rotation array", Icon: RotationArrayIcon,
       snippet: "rotationArray({\n  object: ${1:part},\n  axis: ${2:Z},\n  ${3|N: 8,offset: 45,N: 4\\, offset: 30,N: 4\\, width: 180,offset: 30\\, width: 180|},\n})$0",
+    },
+    {
+      label: "Array along curve", Icon: CurveArrayIcon,
+      snippet: "curveArray({\n  object: ${1:part},\n  curve: ${2:path},\n  follow: ${3|true,false|},\n  ${4|N: 8,offset: 10,N: 4\\, offset: 10,N: 4\\, width: 40,offset: 10\\, width: 40|},\n})$0",
     },
   ],
   helpers: [

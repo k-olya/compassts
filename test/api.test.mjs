@@ -156,11 +156,11 @@ test("documentation folders distinguish constructors, shorthands, operations, de
     assert.ok(entry.members.some(member => member.name === "options.object" && member.description));
     assert.match(entry.description, /new object/);
   }
-  for (const name of ["displacementArray", "rotationArray"]) {
+  for (const name of ["displacementArray", "rotationArray", "curveArray"]) {
     assert.equal(folder(name), "operations");
     const entry = api.entries.find(entry => entry.name === name);
     assert.match(entry.signature, /ArrayCopy<T>\[\]/);
-    assert.deepEqual(entry.members.map(member => member.name), ["options.object", name === "displacementArray" ? "options.vector" : "options.axis", "options.N", "options.offset", "options.width"]);
+    assert.deepEqual(entry.members.map(member => member.name), ["options.object", name === "displacementArray" ? "options.vector" : name === "rotationArray" ? "options.axis" : "options.curve", ...(name === "curveArray" ? ["options.follow"] : []), "options.N", "options.offset", "options.width"]);
     assert.ok(entry.members.every(member => member.description));
     assert.ok(entry.tags.some(tag => tag.name === "example"));
     assert.ok(api.libraries[`file:///node_modules/libcompass/operations/${name}.d.ts`]);
@@ -384,6 +384,8 @@ const retainedUV = chainedTrim.parameters(0.5, 0.5);
 const row = displacementArray({ object: partSolid, vector: X, N: 4, offset: 10 });
 const grid = displacementArray({ object: row, vector: Y, N: 3, width: 30 });
 scene.add(grid);
+const alongPath = curveArray({ object: [partSolid, [partSolid]], curve: path, N: 4, follow: false });
+const alongPathSolid = alongPath[0].chamfer();
 const ring = rotationArray({ object: partSolid, axis: Z, N: 8 });
 scene.add(Object.freeze(ring), node());
 const turnedGrid = rotationArray({ object: grid, axis: Z, offset: 90 });
