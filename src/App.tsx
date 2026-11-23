@@ -3,13 +3,14 @@ import { FiBookOpen, FiChevronDown, FiChevronUp, FiMaximize, FiMinimize } from "
 import Docs from "./Docs.tsx";
 import FilePicker from "./FilePicker.tsx";
 import ProjectControls from "./ProjectControls.tsx";
-import { MAIN_FILE, projectSource } from "./script-files.ts";
+import { MAIN_FILE } from "./script-files.ts";
+import ParametricControls from "./ParametricControls.tsx";
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { AnnotateIcon, MeasureIcon, DisplacementArrayIcon, RotationArrayIcon, CurveArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, ExtrudeRotateIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { AnnotateIcon, MeasureIcon, ParametricIcon, DisplacementArrayIcon, RotationArrayIcon, CurveArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, ExtrudeRotateIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
-import { useCadStore } from "./store.ts";
+import { hasUnrenderedChanges, useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
 
 const toolCategories = [
@@ -136,6 +137,10 @@ const toolSections = {
   ],
   helpers: [
     {
+      label: "Parametric", Icon: ParametricIcon,
+      snippet: "parametric({\n  type: \"${1|number,text,select,checkbox|}\",\n  name: ${2:undefined},\n  min: ${3:0},\n  max: ${4:1},\n  step: ${5:0.001},\n  options: [${6:\"first\", \"second\"}],\n  value: ${7:undefined},\n})$0",
+    },
+    {
       label: "Measure", Icon: MeasureIcon,
       snippet: "measure({\n  object: ${1:part},\n})$0",
     },
@@ -172,7 +177,7 @@ export default function App() {
   const editor = useRef<EditorHandle>(null);
   const resolutionInput = useRef<HTMLInputElement>(null);
   const triangles = rendered.positions.length / 9;
-  const changed = projectSource(files) !== rendered.projectSource;
+  const changed = useCadStore(hasUnrenderedChanges);
   const readOnly = !!files.find(file => file.name === activeFile)?.url;
   const stepResolution = (factor: number) => {
     const input = resolutionInput.current;
@@ -256,16 +261,16 @@ export default function App() {
                 </div>
               </div>
             </div>
-            <div className="viewer-body"><Viewer orthographic={orthographic} /><span className="viewer-hint">Drag / Alt + move to orbit · Scroll to zoom · Right-drag / Shift + move to pan</span></div>
+            <div className="viewer-body"><Viewer orthographic={orthographic} /><ParametricControls /><span className="viewer-hint">Drag / Alt + move to orbit · Scroll to zoom · Right-drag / Shift + move to pan</span></div>
           </section>
-          <section id="docs-pane" className="pane docs-pane" aria-label="libcompass documentation" hidden={!docsOpen}>
-            <div className="pane-header"><span>libcompass docs</span><span className="pane-note">API reference</span></div>
+          <section id="docs-pane" className="pane docs-pane" aria-label="API documentation" hidden={!docsOpen}>
+            <div className="pane-header"><span>API docs</span><span className="pane-note">Compassts &amp; libcompass</span></div>
             <Docs />
           </section>
         </div>
         <SideToolbar label="Rendered view tools">
           <ToolbarSection label="View">
-            <button type="button" aria-label="Documentation" title={docsOpen ? "Show 3D view" : "Browse libcompass documentation"} aria-pressed={docsOpen} aria-controls="docs-pane" onClick={() => setDocsOpen(open => !open)}>
+            <button type="button" aria-label="Documentation" title={docsOpen ? "Show 3D view" : "Browse API documentation"} aria-pressed={docsOpen} aria-controls="docs-pane" onClick={() => setDocsOpen(open => !open)}>
               <FiBookOpen aria-hidden="true" />
             </button>
             <button type="button" onClick={() => setViewExpanded(expanded => !expanded)} aria-label={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} title={viewExpanded ? "Restore code view" : docsOpen ? "Expand documentation" : "Expand rendered view"} aria-pressed={viewExpanded} aria-controls="code-pane">

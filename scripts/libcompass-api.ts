@@ -6,6 +6,8 @@ import type { Plugin } from "vite";
 
 const libraryRoot = realpathSync(fileURLToPath(new URL("../node_modules/libcompass/", import.meta.url)));
 const sourceRoot = join(libraryRoot, "src");
+const parameterSource = fileURLToPath(new URL("../src/parametric.ts", import.meta.url));
+const parameterExports = ["parametric", "ParametricType", "ParametricValue"];
 const moduleId = "virtual:libcompass-api";
 
 function documentation(node: ts.Node) {
@@ -57,13 +59,15 @@ export function readLibcompassApi() {
   program.emit(undefined, (path, content) => {
     if (path.endsWith(".d.ts")) libraries[`file:///node_modules/libcompass/${relative(outputRoot, path).replaceAll("\\", "/")}`] = content;
   });
+  libraries["file:///parametric.d.ts"] = ts.transpileDeclaration(readFileSync(parameterSource, "utf8"), { fileName: parameterSource }).outputText;
+  const documentedExports = [...exports, ...parameterExports];
   const printer = ts.createPrinter({ removeComments: true });
   const entries = Object.entries(libraries).flatMap(([path, content]) => {
     const source = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true);
     return source.statements.flatMap(node => {
       if (ts.isVariableStatement(node)) {
         return node.declarationList.declarations.flatMap(declaration => {
-          if (!ts.isIdentifier(declaration.name) || !exports.includes(declaration.name.text)) return [];
+          if (!ts.isIdentifier(declaration.name) || !documentedExports.includes(declaration.name.text)) return [];
           const statement = ts.factory.updateVariableStatement(node, node.modifiers,
             ts.factory.updateVariableDeclarationList(node.declarationList, [declaration]));
           return [{ name: declaration.name.text, folder: path.includes("/defaults/") ? "defaults" : "util",
@@ -73,7 +77,7 @@ export function readLibcompassApi() {
         });
       }
       if (!(ts.isClassDeclaration(node) || ts.isFunctionDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))
-        || !node.name || !exports.includes(node.name.text)) return [];
+        || !node.name || !documentedExports.includes(node.name.text)) return [];
       const signatureNode = ts.isClassDeclaration(node)
         ? ts.factory.updateClassDeclaration(node, node.modifiers, node.name, node.typeParameters, node.heritageClauses, [])
         : ts.isInterfaceDeclaration(node) ? ts.factory.updateInterfaceDeclaration(node, node.modifiers, node.name, node.typeParameters, node.heritageClauses, []) : node;
@@ -93,7 +97,7 @@ export function readLibcompassApi() {
         }];
       });
       const docs = documentation(node);
-      const folder = ts.isFunctionDeclaration(node)
+      const folder = path === 'file:///parametric.d.ts' ? 'app' : ts.isFunctionDeclaration(node)
         ? docs.description.includes("Constructor shorthand for") ? "shorthands" : path.includes("/operations/") ? "operations" : "util"
         : "classes";
       return [{ name: node.name.text, folder, kind: ts.isClassDeclaration(node) ? "Class" : ts.isInterfaceDeclaration(node) ? "Interface" : ts.isFunctionDeclaration(node) ? "Function" : "Type", signature, ...docs, members }];
@@ -106,7 +110,9 @@ export function readLibcompassApi() {
   libraries["file:///cad-globals.d.ts"] = `
 import * as compass from "libcompass";
 import * as matrix from "gl-matrix";
+import * as parameters from "./parametric";
 declare global {
+  ${parameterExports.map(name => `export import ${name} = parameters.${name};`).join("\n  ")}
   ${exports.map(name => `export import ${name} = compass.${name};`).join("\n  ")}
   ${["glMatrix", "mat2", "mat2d", "mat3", "mat4", "quat", "quat2", "vec2", "vec3", "vec4"].map(name => `export import ${name} = matrix.${name};`).join("\n  ")}
   /** Root of the current scene. Add solids and other nodes with scene.add(...children). */
@@ -123,11 +129,11 @@ export function libcompassApi(): Plugin {
     load: id => id === `\0${moduleId}` ? `export default ${JSON.stringify(readLibcompassApi())}` : undefined,
     configureServer(server) { server.watcher.add(sourceRoot); },
     handleHotUpdate(context) {
-      if (!context.file.startsWith(`${sourceRoot}/`)) return;
+      if (!context.file.startsWith(`${sourceRoot}/`) && context.file !== parameterSource) return;
       const module = context.server.moduleGraph.getModuleById(`\0${moduleId}`);
       if (module) {
         context.server.moduleGraph.invalidateModule(module);
-        return [module];
+        return context.file === parameterSource ? [...context.modules, module] : [module];
       }
     },
   };

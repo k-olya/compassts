@@ -6,6 +6,13 @@ import { readLibcompassApi } from "../scripts/libcompass-api.ts";
 const api = readLibcompassApi();
 
 test("the API browser contains public exports, member TSDoc, parameters, and examples", () => {
+  const parameter = api.entries.find(entry => entry.name === "parametric");
+  assert.equal(parameter.folder, "app");
+  assert.ok(!api.libraries["file:///node_modules/libcompass/index.d.ts"].includes("parametric"));
+  assert.match(parameter.description, /Compassts script helper/);
+  assert.deepEqual(parameter.members.map(member => member.name), ["options.type", "options.name", "options.min", "options.max", "options.step", "options.options", "options.value"]);
+  assert.ok(parameter.members.every(member => member.description));
+  assert.ok(api.libraries["file:///parametric.d.ts"]);
   const sketch = api.entries.find(entry => entry.name === "Sketch");
   assert.match(sketch.description, /Local 2D drawing geometry/);
   assert.ok(sketch.tags.some(tag => tag.name === "example" && tag.text.includes("new Sketch()")));
@@ -236,7 +243,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
     assert.match(entry.signature, new RegExp(`const ${name}:`));
     assert.match(entry.description, /Shared/);
   }
-  assert.ok(api.entries.every(entry => ["classes", "shorthands", "operations", "defaults", "util"].includes(entry.folder)));
+  assert.ok(api.entries.every(entry => ["app", "classes", "shorthands", "operations", "defaults", "util"].includes(entry.folder)));
   assert.ok(api.libraries["file:///node_modules/libcompass/operations/extrude.d.ts"]);
 });
 
@@ -312,6 +319,16 @@ const revolvedAgain = revolved.chamfer();
 const swept = extrudeAlongCurve({ sketch: s, curve: path });
 s.extrudeAlongCurve({ curve: path });
 const generalSurface = spatialSurface({ at: (u, v) => ({ position: [u, v, u * v] }) });
+const inferredNumber = parametric({ value: 0.25 }).toFixed(3);
+const inferredText = parametric({ value: "hello" }).toUpperCase();
+const inferredSelect = parametric({ value: "two", options: ["one", "two"] }).toUpperCase();
+/** @type {boolean} */
+const inferredCheckbox = parametric({ value: false });
+const numericParameter = parametric({ type: "number", value: 0.5 }).toFixed(2);
+const textParameter = parametric({ type: "text" }).toUpperCase();
+const selectParameter = parametric({ type: "select", options: ["one", "two"] }).toUpperCase();
+/** @type {boolean} */
+const checkboxParameter = parametric({ type: "checkbox", value: false });
 const partSolid = extrude({ sketch: s, length: 10, angle: 3 });
 const beveled = chamfer({ solid: partSolid, length: 0.5, angle: 45, boundaries: [0] });
 const beveledByMethod = partSolid.chamfer({ length: 0.5, angle: 45, boundaries: [0] });

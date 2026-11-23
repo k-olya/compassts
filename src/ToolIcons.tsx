@@ -67,6 +67,15 @@ export function MeasureIcon() {
   </ToolIcon>;
 }
 
+export function ParametricIcon() {
+  return <ToolIcon>
+    <path d="M3 5h5m4 0h9M3 12h11m4 0h3M3 19h3m4 0h11" />
+    <rect x="8" y="2.5" width="4" height="5" rx="1" fill="currentColor" fillOpacity="0.15" />
+    <rect x="14" y="9.5" width="4" height="5" rx="1" fill="currentColor" fillOpacity="0.15" />
+    <rect x="6" y="16.5" width="4" height="5" rx="1" fill="currentColor" fillOpacity="0.15" />
+  </ToolIcon>;
+}
+
 export function DisplacementArrayIcon() {
   return <ToolIcon>
     <rect x="2" y="9" width="5" height="6" rx="0.5" fill="currentColor" fillOpacity="0.2" />

@@ -6,6 +6,7 @@ import api from "virtual:libcompass-api";
 
 type Documentation = Pick<(typeof api.entries)[number], "description" | "tags">;
 const folders = [
+  { id: "app", label: "Compassts" },
   { id: "classes", label: "Classes" },
   { id: "shorthands", label: "Shorthands" },
   { id: "operations", label: "Operations" },
@@ -43,7 +44,7 @@ export default function Docs() {
 
   return <>
     <div className="docs-search">
-      <input type="search" aria-label="Search libcompass documentation" placeholder="Search classes, functions, members…" value={query} onChange={event => {
+      <input type="search" aria-label="Search API documentation" placeholder="Search classes, functions, members…" value={query} onChange={event => {
         setQuery(event.target.value);
         setCollapsed([]);
       }} />
@@ -57,7 +58,7 @@ export default function Docs() {
       setSelected(name);
       setCollapsed(current => current.filter(folder => folder !== api.entries.find(item => item.name === name)?.folder));
     }}>
-      <nav className="docs-index" aria-label="libcompass API">
+      <nav className="docs-index" aria-label="Scripting API">
         {folders.map(folder => {
           const items = entries.filter(item => item.folder === folder.id);
           if (!items.length) return null;

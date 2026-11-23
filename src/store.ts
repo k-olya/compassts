@@ -5,6 +5,7 @@ import { errorEntry, type ConsoleEntry } from "./script-console.ts";
 import { PRIMITIVES_CODE } from "./primitives-example.ts";
 import { fetchScriptFile, MAIN_FILE, projectSource, scriptName, type ScriptFile } from "./script-files.ts";
 import { readProject, readWebProject } from "./project-archive.ts";
+import { parameterValue, retainParameterValues, type ParametricControl, type ParametricValue } from "./parametric.ts";
 
 interface CadState {
   projectName: string;
@@ -21,6 +22,8 @@ interface CadState {
   resolution: number;
   setResolution: (resolution: number) => void;
   rendered: RenderedScene;
+  controls: ParametricControl[];
+  setParameter: (name: string, value: ParametricValue) => void;
   error: string | null;
   evaluationError: ConsoleEntry | null;
   consoleEntries: ConsoleEntry[];
@@ -36,6 +39,11 @@ let activeRun = 0;
 let pending: AbortController | undefined;
 let disposeRuntime: (() => void) | undefined;
 let projectVersion = 0;
+let parameterEdits = new Map<string, ParametricControl>();
+
+export function hasUnrenderedChanges(state: Pick<CadState, 'files' | 'controls' | 'rendered'>): boolean {
+  return projectSource(state.files) !== state.rendered.projectSource || JSON.stringify(state.controls) !== JSON.stringify(state.rendered.controls);
+}
 const initialFiles = [
   { name: MAIN_FILE, source: DEFAULT_CODE },
   { name: "primitives.js", source: PRIMITIVES_CODE },
@@ -53,7 +61,7 @@ export const useCadStore = create<CadState>((set, get) => ({
     pending?.abort(); pending = undefined;
     disposeRuntime?.(); disposeRuntime = undefined;
     set({ projectName: project.name, files: project.files, activeFile: MAIN_FILE, code: project.files[0].source,
-      rendered: evaluateCode(''), rendering: false, error: null, evaluationError: null, consoleEntries: [], consoleOpen: false });
+      rendered: evaluateCode(''), controls: [], rendering: false, error: null, evaluationError: null, consoleEntries: [], consoleOpen: false });
   },
   code: DEFAULT_CODE,
   files: initialFiles,
@@ -95,6 +103,15 @@ export const useCadStore = create<CadState>((set, get) => ({
     get().render();
   },
   rendered: initialRendered,
+  controls: initialRendered.controls,
+  setParameter: (name, value) => {
+    const control = get().controls.find(control => control.name === name);
+    if (!control) return;
+    const next = parameterValue(control, value);
+    if (next === control.value) return;
+    parameterEdits.set(name, { ...control, value: next });
+    set(state => ({ controls: state.controls.map(control => control.name === name ? { ...control, value: next } : control) }));
+  },
   error: null,
   evaluationError: null,
   consoleEntries: [],
@@ -114,6 +131,11 @@ export const useCadStore = create<CadState>((set, get) => ({
     const controller = new AbortController();
     pending = controller;
     const files = get().files;
+    const controls = get().controls, edits = parameterEdits = new Map<string, ParametricControl>();
+    const currentControls = (controls: ParametricControl[]) => retainParameterValues(controls, [...edits.values()]);
+    const onControls = (controls: ParametricControl[]) => {
+      if (run === activeRun) set({ controls: currentControls(controls) });
+    };
     set({ consoleEntries: [], consoleOpen: false, evaluationError: null, rendering: true });
     const output = (entry: ConsoleEntry | null) => {
       if (run === activeRun) set(state => ({ consoleEntries: entry ? [...state.consoleEntries, entry] : [], consoleOpen: entry !== null }));
@@ -126,21 +148,21 @@ export const useCadStore = create<CadState>((set, get) => ({
     };
     // Preserve immediate renders for standalone scripts; modules use the browser's native loader.
     if (files.some(file => file.url) || /\b(?:import|export|await)\b/.test(files[0].source)) {
-      return evaluateProject(files, output, get().resolution, { signal: controller.signal,
+      return evaluateProject(files, output, get().resolution, { signal: controller.signal, controls, onControls,
         onFileLoaded: file => {
           if (run === activeRun && !get().files.some(existing => existing.name === file.name)) set(state => ({ files: [...state.files, file] }));
         },
       }).then(({ rendered, dispose }) => {
         if (run !== activeRun) { dispose(); return; }
         pending = undefined; disposeRuntime?.(); disposeRuntime = dispose;
-        set({ rendered, error: null, rendering: false });
+        set({ rendered, controls: currentControls(rendered.controls), error: null, rendering: false });
       }, failed);
     }
     try {
-      const rendered = evaluateCode(files[0].source, output, get().resolution);
+      const rendered = evaluateCode(files[0].source, output, get().resolution, { controls, onControls });
       rendered.projectSource = projectSource(files);
       pending = undefined; disposeRuntime?.(); disposeRuntime = undefined;
-      set({ rendered, error: null, rendering: false });
+      set({ rendered, controls: currentControls(rendered.controls), error: null, rendering: false });
     } catch (error) {
       failed(error);
     }

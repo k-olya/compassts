@@ -5,6 +5,7 @@ import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } from "three"
 import { STLExporter } from "three/addons/exporters/STLExporter.js";
 import { parse } from "acorn";
 import { createScriptConsole, errorEntry, type ConsoleOutput, type ScriptLocation } from "./script-console.ts";
+import { createParametricRuntime, type ParametricControl } from "./parametric.ts";
 import { MAIN_FILE, projectSource, type ScriptFile } from "./script-files.ts";
 import { mapProjectLocation, runProjectFiles, type ProjectSourceMaps } from "./project-runtime.ts";
 
@@ -15,13 +16,14 @@ export const DEFAULT_CODE = `// libcompass constructors, shorthands, and gl-matr
 const width = 100;
 const depth = 64;
 const height = 12;
+const holeRadius = parametric({ name: "Hole radius", min: 1, max: 18, value: 10 });
 
 // start by creating a 2d sketch
 const s = sketch();
 s.add(rectangle({ center, width, height: depth }));
 s.add(
-  circle({ center: { x: -28, y: 0 }, radius: 10 }),
-  circle({ center: { x: 28, y: 0 }, radius: 10 }),
+  circle({ center: { x: -28, y: 0 }, radius: holeRadius }),
+  circle({ center: { x: 28, y: 0 }, radius: holeRadius }),
 );
 
 // create a 3d solid by extruding the sketch
@@ -33,6 +35,7 @@ scene.add(part);
 `;
 
 export interface RenderedScene {
+  controls: ParametricControl[];
   scene: Node;
   positions: Float32Array;
   meshes: RenderedMesh[];
@@ -83,8 +86,8 @@ function collectMeshes(scene: Node, positions: Float32Array): RenderedMesh[] {
   });
 }
 
-function scriptBindings(scriptConsole: Console) {
-  return { ...compass,
+function scriptBindings(scriptConsole: Console, parameters: ReturnType<typeof createParametricRuntime>) {
+  return { ...compass, parametric: parameters.parametric,
     measure: (input: Parameters<typeof compass.measure>[0]) => {
       const options = "object" in input ? input : { object: input };
       return compass.measure({ ...options, log: options.log === undefined ? result => scriptConsole.log(result) : options.log });
@@ -92,25 +95,26 @@ function scriptBindings(scriptConsole: Console) {
     glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
 }
 
-function renderedScene(scene: unknown, source: string): RenderedScene {
+function renderedScene(scene: unknown, source: string, controls: ParametricControl[]): RenderedScene {
   if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
   const positions = scene.triangulate();
   if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
     throw new TypeError("scene.triangulate() must return finite XYZ triangle positions in a Float32Array.");
   }
-  return { scene, positions: positions.slice(), meshes: collectMeshes(scene, positions), source };
+  return { scene, positions: positions.slice(), meshes: collectMeshes(scene, positions), source, controls: [...controls] };
 }
 
 export async function evaluateProject(files: readonly ScriptFile[], output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION,
-  options: { signal?: AbortSignal; onFileLoaded?: (file: ScriptFile) => void } = {}) {
+  options: { signal?: AbortSignal; onFileLoaded?: (file: ScriptFile) => void; controls?: readonly ParametricControl[]; onControls?: (controls: ParametricControl[]) => void } = {}) {
+  const parameters = createParametricRuntime(options.controls, options.onControls);
   const maps: ProjectSourceMaps = new Map();
   const map = (location: ScriptLocation) => mapProjectLocation(location, maps);
   let runtime: Awaited<ReturnType<typeof runProjectFiles>> | undefined;
   try {
     compass.setTriangulationResolution(resolution);
     const scriptConsole = output ? createScriptConsole(output, map) : console;
-    runtime = await runProjectFiles(files, { ...scriptBindings(scriptConsole), scene: new Node(), console: scriptConsole }, maps, { ...options, output });
-    const rendered = renderedScene(runtime.scene, files.find(file => file.name === MAIN_FILE)!.source);
+    runtime = await runProjectFiles(files, { ...scriptBindings(scriptConsole, parameters), scene: new Node(), console: scriptConsole }, maps, { ...options, output });
+    const rendered = renderedScene(runtime.scene, files.find(file => file.name === MAIN_FILE)!.source, parameters.controls);
     rendered.projectSource = projectSource(runtime.files);
     return { rendered, dispose: runtime.dispose };
   } catch (error) {
@@ -123,7 +127,9 @@ export async function evaluateProject(files: readonly ScriptFile[], output?: Con
   }
 }
 
-export function evaluateCode(source: string, output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION): RenderedScene {
+export function evaluateCode(source: string, output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION,
+  options: { controls?: readonly ParametricControl[]; onControls?: (controls: ParametricControl[]) => void } = {}): RenderedScene {
+  const parameters = createParametricRuntime(options.controls, options.onControls);
   // ponytail: synchronous, trusted local code; a worker is needed for execution time limits.
   // Block scope lets local names shadow library bindings such as sketch and circle.
   const body = `"use strict";\n{\n${source}\n;return scene;\n}\n//# sourceURL=compass-script.js`;
@@ -131,7 +137,7 @@ export function evaluateCode(source: string, output?: ConsoleOutput, resolution 
   try {
     compass.setTriangulationResolution(resolution);
     const scriptConsole = output ? createScriptConsole(output) : console;
-    const bindings = scriptBindings(scriptConsole);
+    const bindings = scriptBindings(scriptConsole, parameters);
     let evaluate: (...args: unknown[]) => unknown;
     try {
       evaluate = new Function("scene", "console", ...Object.keys(bindings), body) as typeof evaluate;
@@ -148,7 +154,7 @@ export function evaluateCode(source: string, output?: ConsoleOutput, resolution 
       throw error;
     }
     const scene = evaluate(new Node(), scriptConsole, ...Object.values(bindings));
-    return renderedScene(scene, source);
+    return renderedScene(scene, source, parameters.controls);
   } catch (error) {
     output?.(errorEntry(error, syntaxLocation));
     throw error;

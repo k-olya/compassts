@@ -10,8 +10,8 @@ surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
 `trimCurve` calls. Solid tools insert `extrude`,
 `extrudeAlongCurve`, `extrudeRotate`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
-`trimSurface`. Helpers contains Annotate, Spatial line, Plane, Rotate, and Displace; Arrays
-contains Displacement array and Rotation array. Each tool inserts an options
+`trimSurface`. Helpers contains Parametric, Measure, Annotate, Spatial line, Plane, Rotate, and Displace; Arrays
+contains Displacement array, Rotation array, and Array along curve. Each tool inserts an options
 template at the editor cursor, replacing the current selection. Tab / Shift+Tab
 move between editable values; Undo removes the insertion. Tools restore the
 editor when it is hidden and leave rendering to the Render button. Toolbar
@@ -20,6 +20,33 @@ category. The right toolbar has the documentation toggle and an expand button
 that hides or restores the editor without entering browser fullscreen. Editor
 contents, the camera, and the selected documentation page are preserved when
 switching views.
+
+`parametric()` is a Compassts script helper, separate from the UI-agnostic
+libcompass library. It returns a primitive value and adds a floating Parameters
+widget to the model view. The default example controls both holes with:
+
+```js
+const holeRadius = parametric({ name: 'Hole radius', min: 1, max: 18, value: 10 });
+```
+
+Use `type: 'number' | 'text' | 'select' | 'checkbox'`, or omit it to infer from
+`value`: numbers create slider/number-edit pairs, booleans create checkboxes,
+and strings create text edits or selects when `options` is supplied. Select
+options are strings. Defaults are `min: 0`, `max: 1`, `step: 0.001`; initial
+values are `0.5`, `true`, the first select option, or empty text/empty selects.
+Supply either a type or a value. Names default to `control1`, `control2`, etc.,
+with the counter restarting each run. Explicit names keep controls stable when
+declarations move. Duplicate names throw.
+
+Edits do not rerun the model automatically. The widget's Render button appears
+when controls or any project script differ from the last successful render,
+then hides after rendering. The top Render button and Ctrl/Cmd+Enter in Monaco
+perform the same action. Values persist across runs by name, including imported
+scripts; a changed type/default resets the corresponding control, and number
+values are constrained to their range. Loading a project resets controls to its
+code defaults. Controls are discovered as scripts run, including before a later
+script error, and disappear when a successful run no longer declares them.
+Types and full helper documentation appear under the Compassts docs folder.
 
 Polyline and Rectangle return arrays of connected line
 segments. Their toolbar templates insert `...polyline({ ... })` (or the
