@@ -24,7 +24,7 @@ export function cylinderElliptic({ radiusX = 5, radiusY = 3, height = 10 } = {})
 }
 
 export function sphere({ radius = 5 } = {}) {
-  return cylinder({ radius, height: 2 * radius }).round({ radius });
+  return cylinder({ radius, height: 2 * radius }).round(radius);
 }
 
 export function torus({ majorRadius = 10, minorRadius = 2 } = {}) {
@@ -33,6 +33,6 @@ export function torus({ majorRadius = 10, minorRadius = 2 } = {}) {
     circle(majorRadius + minorRadius),
     circle(majorRadius - minorRadius),
   );
-  return s.extrude(2 * minorRadius).round({ radius: minorRadius });
+  return s.extrude(2 * minorRadius).round(minorRadius);
 }
 `;

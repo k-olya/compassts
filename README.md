@@ -220,7 +220,8 @@ rounded into a sphere. This can change boundary indices for affected profiles.
 
 The Round tool inserts `round({ solid: part, radius: 0.5, boundaries: [] })`.
 It creates a new solid with tangent constant-radius rounds; `part.round(options)`
-is the method form. An omitted or empty boundary list selects every original boundary.
+is the method form, and `part.round(radius)` uses that radius on all boundaries.
+An omitted or empty boundary list selects every original boundary.
 Smooth closed rims can combine tangent straight and curved sections, such as a
 rounded rectangle. Convex rims remove material, while concave rims add material
 at pocket floors; a top-face selector can round both the lip and the floor of a blind pocket.
