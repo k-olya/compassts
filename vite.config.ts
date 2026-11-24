@@ -7,6 +7,8 @@ import { libcompassApi } from "./scripts/libcompass-api.ts";
 // https://vite.dev/config/
 export default defineConfig({
   base: "./",
+  optimizeDeps: { exclude: ['@rollup/browser'] },
+  worker: { format: 'es' },
   build: {
     outDir: "build",
   },

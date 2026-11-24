@@ -250,20 +250,20 @@ scene.add(cutWalls);`);
   assert.ok(result.positions.every(Number.isFinite));
 });
 
-test("resolution changes rerun the model, update script globals, and enforce bounds", () => {
+test("resolution changes rerun the model, update script globals, and enforce bounds", async () => {
   const original = useCadStore.getState();
   try {
     useCadStore.getState().setCode(`console.log(TRIANGULATION_RESOLUTION);
 scene.add(sketch().add(circle({ center: { x: 0, y: 0 }, radius: 10 })).extrude({ length: 3 }));`);
-    useCadStore.getState().render();
+    await useCadStore.getState().render();
     const coarse = useCadStore.getState().rendered.positions.length;
     assert.equal(useCadStore.getState().resolution, 0.0128);
     assert.equal(useCadStore.getState().consoleEntries[0].text, "0.0128");
-    useCadStore.getState().setResolution(0.001);
+    await useCadStore.getState().setResolution(0.001);
     assert.equal(useCadStore.getState().error, null);
     assert.equal(useCadStore.getState().consoleEntries[0].text, "0.001");
     assert.ok(useCadStore.getState().rendered.positions.length > coarse);
-    useCadStore.getState().setResolution(1);
+    await useCadStore.getState().setResolution(1);
     assert.equal(useCadStore.getState().error, null);
     assert.equal(useCadStore.getState().consoleEntries[0].text, "1");
     assert.ok(useCadStore.getState().rendered.positions.length < coarse);
@@ -365,7 +365,7 @@ const part = sketch().add(rectangle({ center, corner2: { x: 1, y: 2 } })).extrud
 scene.add(part.displace({ vector: [10, 20, 30] }).annotate({ name: "Left:arm/part", color: "blue", alpha: 0.5 }));
 scene.add(part.displace({ vector: [-10, 0, 0] }).annotate({ name: "Other", color: "red" }));
 `);
-  store().render();
+  await store().render();
   const rendered = store().rendered, selected = rendered.meshes[0];
   store().exportStl(selected);
   store().exportStl();
@@ -380,11 +380,11 @@ scene.add(part.displace({ vector: [-10, 0, 0] }).annotate({ name: "Other", color
   }
 });
 
-test("Zustand reports render errors, retains the last model, and recovers on success", (t) => {
+test("Zustand reports render errors, retains the last model, and recovers on success", async (t) => {
   const logged = t.mock.method(console, "error", () => {});
   const original = useCadStore.getState().rendered;
   useCadStore.getState().setCode(DEFAULT_CODE.replace("scene.add(part);", "..error...\nscene.add(part);"));
-  useCadStore.getState().render();
+  await useCadStore.getState().render();
   assert.match(useCadStore.getState().error, /Unexpected token/);
   assert.equal(useCadStore.getState().rendered, original);
   assert.equal(logged.mock.callCount(), 1);
@@ -396,7 +396,7 @@ test("Zustand reports render errors, retains the last model, and recovers on suc
   assert.equal(useCadStore.getState().evaluationError, syntaxEntry);
   useCadStore.getState().setCode("throw new Error('bad model')");
   assert.equal(useCadStore.getState().evaluationError, null);
-  useCadStore.getState().render();
+  await useCadStore.getState().render();
   assert.equal(useCadStore.getState().error, "bad model");
   assert.equal(useCadStore.getState().rendered, original);
   assert.equal(logged.mock.callCount(), 2);
@@ -406,7 +406,7 @@ test("Zustand reports render errors, retains the last model, and recovers on suc
   assert.equal(useCadStore.getState().consoleOpen, false);
   assert.equal(useCadStore.getState().evaluationError.text, "Error: bad model");
   useCadStore.getState().setCode("// empty scene");
-  useCadStore.getState().render();
+  await useCadStore.getState().render();
   assert.equal(useCadStore.getState().error, null);
   assert.equal(useCadStore.getState().evaluationError, null);
   assert.equal(useCadStore.getState().rendered.positions.length, 0);
@@ -469,14 +469,15 @@ test("console belongs to the current run and includes renderer errors without ch
   t.mock.method(console, "error", () => {});
   const store = () => useCadStore.getState();
   store().setCode('console.log("before"); Promise.resolve().then(() => console.log("delayed"));');
-  store().render();
+  await store().render();
   await Promise.resolve();
   assert.deepEqual(store().consoleEntries.map(entry => entry.text), ["before", "delayed"]);
   store().setCode('Promise.resolve().then(() => console.log("superseded"));');
-  store().render();
+  const superseded = store().render();
   store().setCode('console.log("current");');
-  store().render();
+  await store().render();
   await Promise.resolve();
+  await superseded;
   assert.deepEqual(store().consoleEntries.map(entry => entry.text), ["current"]);
   const rendered = store().rendered;
   store().reportRendererError(new Error("GPU failed"));
@@ -493,7 +494,7 @@ test("console retains all entries, closes manually, and follows output across ru
   t.mock.method(console, "clear", () => {});
   const store = () => useCadStore.getState();
   store().setCode('for (let i = 0; i < 1205; i++) console.log("row", i);');
-  store().render();
+  await store().render();
   assert.equal(store().consoleOpen, true);
   assert.equal(store().consoleEntries.length, 1205);
   assert.equal(store().consoleEntries[0].text, "row 0");
@@ -502,17 +503,17 @@ test("console retains all entries, closes manually, and follows output across ru
   assert.equal(store().consoleOpen, false);
   assert.equal(store().consoleEntries.length, 1205);
   store().setCode('// no output');
-  store().render();
+  await store().render();
   assert.equal(store().consoleOpen, false);
   assert.deepEqual(store().consoleEntries, []);
-  store().setCode('console.log("sync"); Promise.resolve().then(() => console.log("async"));');
-  store().render();
+  store().setCode('console.log("sync"); setTimeout(() => console.log("async"), 10);');
+  await store().render();
   store().closeConsole();
-  await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 20));
   assert.equal(store().consoleOpen, true);
   assert.deepEqual(store().consoleEntries.map(entry => entry.text), ["sync", "async"]);
   store().setCode('console.log("cleared"); console.clear();');
-  store().render();
+  await store().render();
   assert.equal(store().consoleOpen, false);
   assert.deepEqual(store().consoleEntries, []);
 });

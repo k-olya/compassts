@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { TRIANGULATION_RESOLUTION, setTriangulationResolution } from "libcompass";
-import { DEFAULT_CODE, evaluateCode, evaluateProject, exportBinaryStl, type RenderedMesh, type RenderedScene } from "./cad.ts";
+import { DEFAULT_CODE, evaluateCode, exportBinaryStl, type RenderedMesh, type RenderedScene } from "./cad.ts";
+import { renderAsync } from './render-async.ts';
 import { errorEntry, type ConsoleEntry } from "./script-console.ts";
 import { PRIMITIVES_CODE } from "./primitives-example.ts";
 import { fetchScriptFile, MAIN_FILE, projectSource, scriptName, type ScriptFile } from "./script-files.ts";
@@ -15,12 +16,14 @@ interface CadState {
   files: ScriptFile[];
   activeFile: string;
   rendering: boolean;
+  renderStartedAt: number | null;
+  renderDuration: number | null;
   selectFile: (name: string) => void;
   addFile: (name: string) => Promise<void>;
   renameFile: (name: string, next: string) => void;
   deleteFile: (name: string) => void;
   resolution: number;
-  setResolution: (resolution: number) => void;
+  setResolution: (resolution: number) => Promise<void> | undefined;
   rendered: RenderedScene;
   controls: ParametricControl[];
   setParameter: (name: string, value: ParametricValue) => void;
@@ -31,7 +34,7 @@ interface CadState {
   closeConsole: () => void;
   reportRendererError: (error: unknown) => void;
   setCode: (code: string) => void;
-  render: () => void | Promise<void>;
+  render: () => Promise<void>;
   exportStl: (mesh?: RenderedMesh) => void;
 }
 
@@ -48,7 +51,7 @@ const initialFiles = [
   { name: MAIN_FILE, source: DEFAULT_CODE },
   { name: "primitives.js", source: PRIMITIVES_CODE },
 ];
-const initialRendered = evaluateCode(DEFAULT_CODE);
+const initialRendered = evaluateCode(typeof Worker === 'undefined' ? DEFAULT_CODE : '');
 initialRendered.projectSource = projectSource(initialFiles);
 
 export const useCadStore = create<CadState>((set, get) => ({
@@ -62,12 +65,14 @@ export const useCadStore = create<CadState>((set, get) => ({
     pending?.abort(); pending = undefined;
     disposeRuntime?.(); disposeRuntime = undefined;
     set({ projectName: project.name, files: project.files, activeFile: MAIN_FILE, code: project.files[0].source,
-      rendered: evaluateCode(''), controls: [], rendering: false, error: null, evaluationError: null, consoleEntries: [], consoleOpen: false });
+      rendered: evaluateCode(''), controls: [], rendering: false, renderStartedAt: null, renderDuration: null, error: null, evaluationError: null, consoleEntries: [], consoleOpen: false });
   },
   code: DEFAULT_CODE,
   files: initialFiles,
   activeFile: MAIN_FILE,
   rendering: false,
+  renderStartedAt: null,
+  renderDuration: null,
   selectFile: name => {
     const file = get().files.find(file => file.name === name);
     if (file) set({ activeFile: name, code: file.source });
@@ -101,7 +106,7 @@ export const useCadStore = create<CadState>((set, get) => ({
     setTriangulationResolution(resolution);
     if (resolution === get().resolution) return;
     set({ resolution });
-    get().render();
+    return get().render();
   },
   rendered: initialRendered,
   controls: initialRendered.controls,
@@ -126,9 +131,11 @@ export const useCadStore = create<CadState>((set, get) => ({
     if (get().files.find(file => file.name === get().activeFile)?.url) return;
     set(state => ({ code, evaluationError: null, files: state.files.map(file => file.name === state.activeFile ? { ...file, source: code } : file) }));
   },
-  render: () => {
+  render: async () => {
+    const startedAt = performance.now();
     const run = ++activeRun;
     pending?.abort();
+    disposeRuntime?.(); disposeRuntime = undefined;
     const controller = new AbortController();
     pending = controller;
     const files = get().files;
@@ -137,34 +144,33 @@ export const useCadStore = create<CadState>((set, get) => ({
     const onControls = (controls: ParametricControl[]) => {
       if (run === activeRun) set({ controls: currentControls(controls) });
     };
-    set({ consoleEntries: [], consoleOpen: false, evaluationError: null, rendering: true });
+    set({ consoleEntries: [], consoleOpen: false, evaluationError: null, rendering: true, renderStartedAt: startedAt, renderDuration: null });
     const output = (entry: ConsoleEntry | null) => {
       if (run === activeRun) set(state => ({ consoleEntries: entry ? [...state.consoleEntries, entry] : [], consoleOpen: entry !== null }));
     };
     const failed = (error: unknown) => {
       if (run !== activeRun) return;
       console.error(error);
+      if (!get().consoleEntries.some(entry => entry.level === 'error')) output(errorEntry(error));
       set({ error: error instanceof Error ? error.message || error.name : String(error), rendering: false,
+        renderStartedAt: null, renderDuration: performance.now() - startedAt,
         evaluationError: [...get().consoleEntries].reverse().find(entry => entry.level === 'error') ?? null });
     };
-    // Preserve immediate renders for standalone scripts; modules use the browser's native loader.
-    if (files.some(file => file.url) || /\b(?:import|export|await)\b/.test(files[0].source)) {
-      return evaluateProject(files, output, get().resolution, { signal: controller.signal, controls, onControls,
+    try {
+      const { rendered, dispose } = await renderAsync(files, output, get().resolution, { signal: controller.signal, controls, onControls,
         onFileLoaded: file => {
           if (run === activeRun && !get().files.some(existing => existing.name === file.name)) set(state => ({ files: [...state.files, file] }));
         },
-      }).then(({ rendered, dispose }) => {
-        if (run !== activeRun) { dispose(); return; }
-        pending = undefined; disposeRuntime?.(); disposeRuntime = dispose;
-        set({ rendered, controls: currentControls(rendered.controls), error: null, rendering: false });
-      }, failed);
-    }
-    try {
-      const rendered = evaluateCode(files[0].source, output, get().resolution, { controls, onControls });
-      rendered.projectSource = projectSource(files);
-      pending = undefined; disposeRuntime?.(); disposeRuntime = undefined;
-      set({ rendered, controls: currentControls(rendered.controls), error: null, rendering: false });
+      });
+      if (run !== activeRun) { dispose(); return; }
+      pending = undefined; disposeRuntime = dispose;
+      set({ rendered, controls: currentControls(rendered.controls), error: null, rendering: false,
+        renderStartedAt: null, renderDuration: performance.now() - startedAt });
     } catch (error) {
+      if (error && typeof error === 'object' && 'dispose' in error && typeof error.dispose === 'function') {
+        if (run === activeRun) disposeRuntime = error.dispose as () => void;
+        else error.dispose();
+      }
       failed(error);
     }
   },

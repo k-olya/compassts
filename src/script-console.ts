@@ -18,6 +18,7 @@ export interface ConsoleEntry {
 export type ConsolePart = { text: string } | { value: unknown };
 
 let nextEntryId = 0;
+export const consoleEntryId = () => nextEntryId++;
 
 export type ConsoleOutput = (entry: ConsoleEntry | null) => void;
 
@@ -50,7 +51,7 @@ function scriptTrace(stack = "", map: LocationMapper = location => location) {
 export function errorEntry(error: unknown, location?: ScriptLocation, context?: string, map?: LocationMapper): ConsoleEntry {
   const trace = scriptTrace(errorStack(error), map);
   return {
-    id: nextEntryId++,
+    id: consoleEntryId(),
     level: "error",
     text: `${context ? `${context}: ` : ""}${error instanceof Error ? error.toString() : String(error)}`,
     location: location ?? trace.location,
@@ -120,7 +121,7 @@ export function createScriptConsole(output: ConsoleOutput, map?: LocationMapper)
           : key === "warn" ? "warn" : key === "info" ? "info" : key === "debug" || key === "trace" ? "debug" : "log";
         const error = args.find(value => errorStack(value));
         const parts: ConsolePart[] = [{ text: "  ".repeat(depth) }, ...format(args)];
-        output({ id: nextEntryId++, level, parts,
+        output({ id: consoleEntryId(), level, parts,
           text: parts.map(part => "text" in part ? part.text : consoleValueText(part.value)).join(""), location: trace.location,
           stack: key === "trace" ? trace.stack : errorStack(error) ? scriptTrace(errorStack(error), map).stack : undefined });
         if (key === "group" || key === "groupCollapsed") depth++;

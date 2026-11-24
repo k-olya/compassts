@@ -36,7 +36,7 @@ scene.add(part);
 
 export interface RenderedScene {
   controls: ParametricControl[];
-  scene: Node;
+  scene?: Node;
   positions: Float32Array;
   meshes: RenderedMesh[];
   source: string;
@@ -86,7 +86,7 @@ function collectMeshes(scene: Node, positions: Float32Array): RenderedMesh[] {
   });
 }
 
-function scriptBindings(scriptConsole: Console, parameters: ReturnType<typeof createParametricRuntime>) {
+export function scriptBindings(scriptConsole: Console, parameters: ReturnType<typeof createParametricRuntime>) {
   return { ...compass, parametric: parameters.parametric,
     measure: (input: Parameters<typeof compass.measure>[0]) => {
       const options = "object" in input ? input : { object: input };
@@ -95,7 +95,7 @@ function scriptBindings(scriptConsole: Console, parameters: ReturnType<typeof cr
     glMatrix, mat2, mat2d, mat3, mat4, quat, quat2, vec2, vec3, vec4 };
 }
 
-function renderedScene(scene: unknown, source: string, controls: ParametricControl[]): RenderedScene {
+export function renderedScene(scene: unknown, source: string, controls: ParametricControl[]): RenderedScene {
   if (!(scene instanceof Node)) throw new TypeError("scene must be a libcompass Node.");
   const positions = scene.triangulate();
   if (!(positions instanceof Float32Array) || positions.length % 9 !== 0 || !positions.every(Number.isFinite)) {
@@ -130,7 +130,7 @@ export async function evaluateProject(files: readonly ScriptFile[], output?: Con
 export function evaluateCode(source: string, output?: ConsoleOutput, resolution = compass.TRIANGULATION_RESOLUTION,
   options: { controls?: readonly ParametricControl[]; onControls?: (controls: ParametricControl[]) => void } = {}): RenderedScene {
   const parameters = createParametricRuntime(options.controls, options.onControls);
-  // ponytail: synchronous, trusted local code; a worker is needed for execution time limits.
+  // Synchronous evaluation is also used inside the background render worker.
   // Block scope lets local names shadow library bindings such as sketch and circle.
   const body = `"use strict";\n{\n${source}\n;return scene;\n}\n//# sourceURL=compass-script.js`;
   let syntaxLocation: ScriptLocation | undefined;

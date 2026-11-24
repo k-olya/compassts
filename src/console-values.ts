@@ -1,3 +1,5 @@
+import { RemoteConsoleValue } from './remote-console.ts';
+
 export function isInspectable(value: unknown): value is object {
   return value !== null && (typeof value === "object" || typeof value === "function");
 }
@@ -5,6 +7,7 @@ export function isInspectable(value: unknown): value is object {
 /** A compact label, without traversing objects or invoking their getters/toJSON. */
 export function consoleValueText(value: unknown, quoteStrings = false): string {
   try {
+    if (value instanceof RemoteConsoleValue) return value.label;
     if (typeof value === "string") return quoteStrings ? JSON.stringify(value) : value;
     if (typeof value === "bigint") return `${value}n`;
     if (typeof value === "function") return `ƒ ${value.name || "(anonymous)"}()`;

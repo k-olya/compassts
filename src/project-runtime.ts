@@ -2,7 +2,7 @@ import { parse, type Node as AstNode, type ImportDeclaration, type ImportExpress
 import { fetchScriptFile, MAIN_FILE, resolveScript, type ScriptFile } from './script-files.ts';
 import { errorEntry, type ConsoleOutput, type ScriptLocation } from './script-console.ts';
 
-interface Edit { start: number; end: number; text: string; line: number; column: number }
+export interface Edit { start: number; end: number; text: string; line: number; column: number }
 export type ProjectSourceMaps = Map<string, Edit[]>;
 
 export function mapProjectLocation(location: ScriptLocation, maps: ProjectSourceMaps): ScriptLocation {

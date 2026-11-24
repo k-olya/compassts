@@ -4,13 +4,19 @@ import { OverlayScrollbarsComponent, type OverlayScrollbarsComponentRef } from "
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
 import { consoleProperties, consoleValueText, isInspectable, type ConsoleProperty } from "./console-values.ts";
+import { RemoteConsoleValue } from './remote-console.ts';
 
 function ConsoleValue({ value, ancestors = [], nested = false }: { value: unknown; ancestors?: object[]; nested?: boolean }) {
   const [properties, setProperties] = useState<ConsoleProperty[] | null>(null);
   if (!isInspectable(value)) return <span className={`console-value console-value-${typeof value}`}>{consoleValueText(value, nested)}</span>;
   if (ancestors.includes(value)) return <span className="console-muted">[Circular]</span>;
   return (
-    <details className="console-object" onToggle={event => setProperties(event.currentTarget.open ? consoleProperties(value) : null)}>
+    <details className="console-object" onToggle={async event => {
+      const details = event.currentTarget;
+      if (!details.open) { setProperties(null); return; }
+      const properties = value instanceof RemoteConsoleValue ? await value.properties() : consoleProperties(value);
+      if (details.open) setProperties(properties);
+    }}>
       <summary title="Expand to inspect current properties">{consoleValueText(value)}</summary>
       {properties && <div className="console-properties">
         {properties.length ? properties.map((property, index) => (

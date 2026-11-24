@@ -4,6 +4,16 @@ A code-based CAD app powered by libcompass: write JavaScript in Monaco on the
 left, inspect the model or API documentation on the right, and export binary STL.
 Render and Export STL stay in the top menu.
 
+Render evaluates and triangulates ordinary CAD scripts in a background worker so
+the editor and preview remain responsive. Starting a new run cancels the previous
+worker; failed runs retain the last successful model. After one second, the status
+bar shows a live elapsed time and keeps the total duration after completion or
+failure. Shorter runs omit the duration. Project loading clears the timing.
+DOM-dependent scripts (including native SVG paths and classic URL libraries) use
+the browser execution path for compatibility; those calculations can still block
+the UI, although their total duration is recorded. Console objects are inspected
+lazily in the worker, with getters left unevaluated.
+
 The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
 surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
 `polyline`, `roundPolyline`, `rectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
@@ -214,6 +224,13 @@ is the method form. An omitted or empty boundary list selects every original bou
 Smooth closed rims can combine tangent straight and curved sections, such as a
 rounded rectangle. Convex rims remove material, while concave rims add material
 at pocket floors; a top-face selector can round both the lip and the floor of a blind pocket.
+Straight edges also support concave rounding. Unsupported analytic configurations
+retry the numerical solver, which handles open straight/curved boundaries between
+regular planar or spatial surfaces with planar end caps. It shares closing arcs
+with those caps and trims neighboring boundaries; oblique caps work where source
+charts permit. Mixed corner junctions, curved end caps, overlaps and unresolved
+geometry still report errors. Unrelated curved surfaces and distant hole trims
+are preserved, so one call can round a plate's outside edges and its hole rims.
 Rounds remain mathematical surfaces, including spherical corners. At the radius
 limit, consumed faces disappear so cylinders can become spheres, hollow cylinders
 can become tori, and four parallel cube rounds can become a cylinder. Unresolved

@@ -5,12 +5,13 @@ import FilePicker from "./FilePicker.tsx";
 import ProjectControls from "./ProjectControls.tsx";
 import { MAIN_FILE } from "./script-files.ts";
 import ParametricControls from "./ParametricControls.tsx";
+import RenderStatus from './RenderStatus.tsx';
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
 import { AnnotateIcon, MeasureIcon, ParametricIcon, DisplacementArrayIcon, RotationArrayIcon, CurveArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, ExtrudeRotateIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
-import { hasUnrenderedChanges, useCadStore } from "./store.ts";
+import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
 
 const toolCategories = [
@@ -174,11 +175,10 @@ export default function App() {
   const [orthographic, setOrthographic] = useState(false);
   const [docsOpen, setDocsOpen] = useState(false);
   const [parametersHidden, setParametersHidden] = useState(false);
-  const { files, activeFile, rendering, rendered, error, render, exportStl, resolution, setResolution } = useCadStore();
+  const { files, activeFile, rendered, render, exportStl, resolution, setResolution } = useCadStore();
   const editor = useRef<EditorHandle>(null);
   const resolutionInput = useRef<HTMLInputElement>(null);
   const triangles = rendered.positions.length / 9;
-  const changed = useCadStore(hasUnrenderedChanges);
   const readOnly = !!files.find(file => file.name === activeFile)?.url;
   const stepResolution = (factor: number) => {
     const input = resolutionInput.current;
@@ -285,7 +285,7 @@ export default function App() {
       </div>
       <Console onNavigate={location => { setViewExpanded(false); useCadStore.getState().selectFile(location.file ?? MAIN_FILE); setEditorLocation({ ...location }); }} />
       <footer className="statusbar" aria-live="polite">
-        <span>{rendering ? "Rendering…" : error ? "Render failed · Previous model retained" : changed ? "Changes not rendered" : "Rendered"}</span>
+        <RenderStatus />
         <span>{triangles.toLocaleString()} triangles</span>
       </footer>
     </main>
