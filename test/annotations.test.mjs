@@ -17,7 +17,7 @@ test('script annotations become separate preview meshes while plain geometry ret
   const result = evaluateCode(`
 const part = sketch().add(rectangle({ center, corner2: { x: 1, y: 1 } })).extrude({ length: 2 });
 scene.add(part.displace({ vector: [-5, 0, 0] }));
-scene.add(annotate({ solid: part, name: 'Blue', color: '#2288ee', alpha: 0.4 }));
+scene.add(annotate({ node: part, name: 'Blue', color: '#2288ee', alpha: 0.4 }));
 scene.add(part.displace({ vector: [5, 0, 0] }).annotate({ name: 'Red', color: 'red', alpha: 1 }));
 `);
   assert.deepEqual(result.meshes.map(({ name, color, alpha }) => [name, color, alpha]), [
@@ -122,7 +122,7 @@ test('palette names, constants, and automatic defaults reach actual preview mesh
   const result = evaluateCode(`
 const part = sketch().add(rectangle({ center, corner2: { x: 1, y: 1 } })).extrude({ length: 2 });
 for (const name of Object.keys(colors)) scene.add(part.annotate({ color: name }));
-scene.add(annotate({ solid: part }));
+scene.add(annotate({ node: part }));
 scene.add(part.annotate({ color: colors.blue }));
 `);
   assert.equal(result.meshes.length, 18);

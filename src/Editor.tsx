@@ -119,7 +119,13 @@ export default function Editor({ location, ref }: { location: ScriptLocation | n
     });
     const subscription = editor.onDidChangeModelContent(() => { if (!syncing) useCadStore.getState().setCode(editor.getValue()); });
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => useCadStore.getState().render());
+    const formatActiveFile = async () => {
+      if (useCadStore.getState().files.find(file => file.name === active)?.url) return;
+      await editor.getAction("editor.action.formatDocument")?.run();
+    };
+    useCadStore.setState({ formatActiveFile });
     return () => {
+      if (useCadStore.getState().formatActiveFile === formatActiveFile) useCadStore.setState({ formatActiveFile: null });
       unsubscribe();
       subscription.dispose();
       editorRef.current = null;

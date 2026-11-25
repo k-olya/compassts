@@ -100,9 +100,9 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   for (const name of ["name", "color", "alpha"]) assert.ok(annotation.members.some(member => member.name === name && member.description));
   const annotate = api.entries.find(entry => entry.name === "annotate");
   assert.equal(annotate.folder, "operations");
-  assert.match(annotate.signature, /solid: Solid/);
+  assert.match(annotate.signature, /node: Node/);
   assert.match(annotate.signature, /AnnotatedNode/);
-  assert.doesNotMatch(annotate.signature, /node: Node/);
+  assert.doesNotMatch(annotate.signature, /solid:/);
   assert.ok(annotate.members.every(member => member.description));
   assert.match(annotate.signature, /color\?: AnnotationColor/);
   const palette = api.entries.find(entry => entry.name === "colors");
@@ -110,7 +110,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   assert.equal(palette.kind, "Constant");
   assert.match(palette.signature, /default: "#d2a568"/);
   assert.match(api.entries.find(entry => entry.name === "AnnotationColor").signature, /keyof typeof colors/);
-  assert.match(api.entries.find(entry => entry.name === "Solid").members.find(member => member.name === "annotate").signature, /: AnnotatedNode/);
+  assert.match(api.entries.find(entry => entry.name === "Node").members.find(member => member.name === "annotate").signature, /: AnnotatedNode/);
 });
 
 test("documentation folders distinguish constructors, shorthands, operations, defaults, and utilities", () => {
@@ -336,7 +336,7 @@ const defaultBeveled = partSolid.chamfer();
 const rounded = round({ solid: partSolid, radius: 0.5, boundaries: [0] });
 const roundedByMethod = partSolid.round({ radius: 0.5, boundaries: [0] });
 const defaultRounded = partSolid.round();
-const annotatedByOperation = annotate({ solid: partSolid, name: "Part", color: "#33aaff", alpha: 0.5 });
+const annotatedByOperation = annotate({ node: partSolid, name: "Part", color: "#33aaff", alpha: 0.5 });
 const annotatedByMethod = partSolid.annotate({ name: "Part", color: "blue", alpha: 0.5 });
 const paletteAnnotation = partSolid.annotate({ color: colors.green });
 /** @type {AnnotationColor} */

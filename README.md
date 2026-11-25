@@ -518,6 +518,9 @@ Computed dynamic imports currently report an explicit error. Console links and
 evaluation markers identify the originating file and open it in the editor.
 Project changes take effect when Render runs, regardless of which file is selected.
 
+Rendering or saving formats the active editable file with Monaco’s bundled
+JavaScript formatter. Formatting keeps the editor’s undo history.
+
 Edit the project name beside the compass branding. The save icon downloads
 `<project name>.cts`; the folder icon opens a saved project. You can also drop a
 `.cts` or plain `.js` file anywhere in the app, or select either with the folder icon.

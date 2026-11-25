@@ -34,6 +34,7 @@ interface CadState {
   closeConsole: () => void;
   reportRendererError: (error: unknown) => void;
   setCode: (code: string) => void;
+  formatActiveFile: (() => Promise<void>) | null;
   render: () => Promise<void>;
   exportStl: (mesh?: RenderedMesh) => void;
 }
@@ -131,6 +132,7 @@ export const useCadStore = create<CadState>((set, get) => ({
     if (get().files.find(file => file.name === get().activeFile)?.url) return;
     set(state => ({ code, evaluationError: null, files: state.files.map(file => file.name === state.activeFile ? { ...file, source: code } : file) }));
   },
+  formatActiveFile: null,
   render: async () => {
     const startedAt = performance.now();
     const run = ++activeRun;
@@ -138,7 +140,6 @@ export const useCadStore = create<CadState>((set, get) => ({
     disposeRuntime?.(); disposeRuntime = undefined;
     const controller = new AbortController();
     pending = controller;
-    const files = get().files;
     const controls = get().controls, edits = parameterEdits = new Map<string, ParametricControl>();
     const currentControls = (controls: ParametricControl[]) => retainParameterValues(controls, [...edits.values()]);
     const onControls = (controls: ParametricControl[]) => {
@@ -157,6 +158,10 @@ export const useCadStore = create<CadState>((set, get) => ({
         evaluationError: [...get().consoleEntries].reverse().find(entry => entry.level === 'error') ?? null });
     };
     try {
+      const format = get().formatActiveFile;
+      if (format) await format();
+      if (run !== activeRun) return;
+      const files = get().files;
       const { rendered, dispose } = await renderAsync(files, output, get().resolution, { signal: controller.signal, controls, onControls,
         onFileLoaded: file => {
           if (run === activeRun && !get().files.some(existing => existing.name === file.name)) set(state => ({ files: [...state.files, file] }));

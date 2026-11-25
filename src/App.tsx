@@ -147,7 +147,7 @@ const toolSections = {
     },
     {
       label: "Annotate", Icon: AnnotateIcon,
-      snippet: "annotate({\n  solid: ${1:part},\n  name: ${2:undefined},\n  color: \"${3|default,red,orange,amber,yellow,lime,green,teal,cyan,blue,indigo,violet,purple,pink,rose,gray|}\",\n  alpha: ${4:1},\n})$0",
+      snippet: "annotate({\n  node: ${1:part},\n  name: ${2:undefined},\n  color: \"${3|default,red,orange,amber,yellow,lime,green,teal,cyan,blue,indigo,violet,purple,pink,rose,gray|}\",\n  alpha: ${4:1},\n})$0",
     },
     {
       label: "Spatial line", Icon: SpatialLineIcon,

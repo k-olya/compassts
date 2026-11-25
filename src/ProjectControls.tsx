@@ -4,7 +4,7 @@ import { projectUrl, writeProject } from './project-archive.ts';
 import { useCadStore } from './store.ts';
 
 export default function ProjectControls() {
-  const { projectName, setProjectName, files, loadProject } = useCadStore();
+  const { projectName, setProjectName, loadProject } = useCadStore();
   const input = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const opening = useRef(false);
@@ -59,9 +59,11 @@ export default function ProjectControls() {
     };
   }, [open]);
 
-  const save = () => {
+  const save = async () => {
     setError('');
     try {
+      await useCadStore.getState().formatActiveFile?.();
+      const { projectName, files } = useCadStore.getState();
       const url = URL.createObjectURL(new Blob([writeProject(projectName, files)], { type: 'application/zip' }));
       const link = document.createElement('a');
       link.href = url;
