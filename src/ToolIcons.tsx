@@ -329,3 +329,12 @@ export function DisplaceIcon() {
     <path d="m6 17 12-11m-6 0h6v6" />
   </ToolIcon>;
 }
+
+export function MirrorIcon() {
+  return <ToolIcon>
+    <path d="M12 2v20" strokeDasharray="2 2" opacity="0.6" />
+    <path d="M3 5v14l6-3V8Z" fill="currentColor" fillOpacity="0.12" />
+    <path d="M21 5v14l-6-3V8Z" fill="currentColor" fillOpacity="0.06" />
+    <path d="M8 12h8m-2-2 2 2-2 2m-4-4-2 2 2 2" />
+  </ToolIcon>;
+}

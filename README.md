@@ -18,7 +18,7 @@ The left icon toolbar selects 2D tools, Solid tools, Spatial curves, Spatial
 surfaces, Arrays, or Helpers. 2D tools insert `sketch`, `lineSegment`,
 `polyline`, `roundPolyline`, `rectangle`, `circle`, `ellipse`, `arc`, `planarCurve`, and planar
 `trimCurve` calls. Solid tools insert `extrude`,
-`extrudeAlongCurve`, `extrudeRotate`, `extrudeCut`, `chamfer`, `round`, `intersect`, and `difference` calls.
+`extrudeAlongCurve`, `extrudeRotate`, `extrudeCut`, `chamfer`, `round`, `intersect`, `difference`, and `mirror` calls.
 Spatial curves contains `spatialCurveFromPlanar` and spatial `trimCurve`; Spatial surfaces contains
 `trimSurface`. Helpers contains Parametric, Measure, Annotate, Spatial line, Plane, Rotate, and Displace; Arrays
 contains Displacement array, Rotation array, and Array along curve. Each tool inserts an options
@@ -156,6 +156,20 @@ The same transformations are available as `.rotate({ axis, angle })` and
 For example, `part.rotate({ axis: Z, angle: 45 }).displace({ vector: [10, 0, 0] })`
 returns a new solid and supports further modeling operations. These methods and
 their parameter docs are available to Monaco.
+
+The Solid tools category includes Mirror, inserting `mirror({ solid: part, plane: YZ })`.
+It returns a new solid reflected across the infinite world-space plane, retaining
+exact surfaces, shared topology, sampling overrides, trims and outward normals.
+Use `part.mirror(YZ)` or `part.mirror({ plane: YZ })` for chaining. A displaced or
+rotated plane is supported; reversing its normal gives the same reflection.
+The original solid, its children and caches stay unchanged; child nodes are
+retained under new lazy transforms. Mirroring creates a copy without uniting it
+with the original; use `.union(...)` to combine them.
+
+```js
+const reflected = part.mirror(YZ.displace([10, 0, 0]));
+scene.add(part, reflected);
+```
 
 The Helpers category includes Measure, inserting `measure({ object: part })`.
 It returns an object and automatically prints it to the app console with a link
