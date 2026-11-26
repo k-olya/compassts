@@ -122,7 +122,7 @@ export async function runProjectFiles(files: readonly ScriptFile[], bindings: Re
     for (const name of ['libcompass', 'gl-matrix']) {
       const names = Object.keys(bindings).filter(key => name === 'gl-matrix'
         ? ['glMatrix','mat2','mat2d','mat3','mat4','quat','quat2','vec2','vec3','vec4'].includes(key)
-        : !['scene','console','parametric','glMatrix','mat2','mat2d','mat3','mat4','quat','quat2','vec2','vec3','vec4'].includes(key));
+        : !['scene','console','parametric','log','visualize','vi','glMatrix','mat2','mat2d','mat3','mat4','quat','quat2','vec2','vec3','vec4'].includes(key));
       imports[key(name)] = blob(names.map(name => `export const ${name}=globalThis.__compassBindings[${JSON.stringify(name)}];`).join('\n'));
     }
     document.body.append(frame);

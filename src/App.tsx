@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { FiBookOpen, FiChevronDown, FiChevronUp, FiMaximize, FiMinimize } from "react-icons/fi";
+import { FiEye, FiBookOpen, FiChevronDown, FiChevronUp, FiMaximize, FiMinimize } from "react-icons/fi";
 import Docs from "./Docs.tsx";
 import FilePicker from "./FilePicker.tsx";
 import ProjectControls from "./ProjectControls.tsx";
@@ -141,6 +141,7 @@ const toolSections = {
     },
   ],
   helpers: [
+    { label: "Visualize", Icon: FiEye, snippet: "vi(${1:geometry})$0" },
     {
       label: "Parametric", Icon: ParametricIcon,
       snippet: "parametric({\n  type: \"${1|number,text,select,checkbox|}\",\n  name: ${2:undefined},\n  min: ${3:0},\n  max: ${4:1},\n  step: ${5:0.001},\n  options: [${6:\"first\", \"second\"}],\n  value: ${7:undefined},\n})$0",
@@ -151,7 +152,7 @@ const toolSections = {
     },
     {
       label: "Annotate", Icon: AnnotateIcon,
-      snippet: "annotate({\n  node: ${1:part},\n  name: ${2:undefined},\n  color: \"${3|default,red,orange,amber,yellow,lime,green,teal,cyan,blue,indigo,violet,purple,pink,rose,gray|}\",\n  alpha: ${4:1},\n})$0",
+      snippet: "annotate({\n  ${1|node: part,geometry: geometry|},\n  name: ${2:undefined},\n  color: \"${3|default,red,orange,amber,yellow,lime,green,teal,cyan,blue,indigo,violet,purple,pink,rose,gray|}\",\n  alpha: ${4:1},\n  exclude: ${5:false},\n})$0",
     },
     {
       label: "Spatial line", Icon: SpatialLineIcon,

@@ -6,6 +6,22 @@ import { readLibcompassApi } from "../scripts/libcompass-api.ts";
 const api = readLibcompassApi();
 
 test("the API browser contains public exports, member TSDoc, parameters, and examples", () => {
+  const log = api.entries.find(entry => entry.name === "log");
+  assert.equal(log.folder, "app");
+  assert.match(log.signature, /log<T>\(value: T\): T/);
+  assert.match(log.description, /script console/);
+  assert.ok(!api.libraries["file:///node_modules/libcompass/index.d.ts"].includes("function log"));
+  assert.match(api.entries.find(entry => entry.name === "annotate").members.find(member => member.name === "options.exclude").description, /overall export/);
+  assert.ok(api.entries.find(entry => entry.name === "AnnotatedNode").members.some(member => member.name === "exclude"));
+  const visualize = api.entries.find(entry => entry.name === "visualize");
+  assert.equal(visualize.folder, "app");
+  assert.match(visualize.signature, /visualize<T extends Visualizable>/);
+  assert.match(visualize.description, /original geometry/);
+  const vi = api.entries.find(entry => entry.name === "vi");
+  assert.equal(vi.folder, "app");
+  assert.match(vi.signature, /vi<T extends Visualizable>/);
+  assert.match(vi.description, /alias for visualize/);
+  assert.ok(api.entries.find(entry => entry.name === "annotate").members.some(member => member.name === "options.geometry"));
   const parameter = api.entries.find(entry => entry.name === "parametric");
   assert.equal(parameter.folder, "app");
   assert.ok(!api.libraries["file:///node_modules/libcompass/index.d.ts"].includes("parametric"));
@@ -100,7 +116,7 @@ test("the API browser contains public exports, member TSDoc, parameters, and exa
   for (const name of ["name", "color", "alpha"]) assert.ok(annotation.members.some(member => member.name === name && member.description));
   const annotate = api.entries.find(entry => entry.name === "annotate");
   assert.equal(annotate.folder, "operations");
-  assert.match(annotate.signature, /node: Node/);
+  assert.match(annotate.signature, /node\?: Node/);
   assert.match(annotate.signature, /AnnotatedNode/);
   assert.doesNotMatch(annotate.signature, /solid:/);
   assert.ok(annotate.members.every(member => member.description));
@@ -236,7 +252,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(api.entries.find(entry => entry.name === "PI").kind, "Constant");
   assert.match(api.entries.find(entry => entry.name === "radtodeg").description, /radians to degrees/);
   assert.match(api.entries.find(entry => entry.name === "degtorad").description, /degrees to radians/);
-  for (const name of ["XY", "ZX", "YZ", "X", "Y", "Z", "negX", "negY", "negZ", "center", "origin"]) {
+  for (const name of ["XY", "YX", "XZ", "ZX", "YZ", "X", "Y", "Z", "negX", "negY", "negZ", "center", "origin"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.folder, "defaults");
     assert.equal(entry.kind, "Constant");
@@ -248,7 +264,22 @@ test("documentation folders distinguish constructors, shorthands, operations, de
 });
 
 test("editor globals resolve libcompass and gl-matrix types and documentation", () => {
-  const code = `/** @type {Point} */
+  const code = `const logged = log({ value: 42 });
+const loggedNumber = logged.value.toFixed(2);
+const inspectedSketch = visualize(sketch(ZX));
+const inspectedSolid = inspectedSketch.add(circle(2)).extrude(4);
+const inspectedArray = visualize([Z, [circle(2), center]]);
+const inspectedPlane = visualize(XY).toWorld(center);
+const shortPlane = vi(XY).toWorld(center);
+const geometryAnnotation = annotate({ geometry: [XY, inspectedSketch, inspectedArray, rectangle({ center, width: 2, height: 3 })], color: "blue" });
+const additionalGeometry = node().annotate({ geometry: Z });
+const directGeometry = new AnnotatedNode({ geometry: circle(2) });
+const shorthandGeometry = annotatedNode({ geometry: XY });
+const exportReference = annotate({ node: node(), exclude: true });
+const excludedMethod = node().annotate({ exclude: true });
+const excludedGroup = annotatedNode({ exclude: true });
+exportReference.exclude = false;
+/** @type {Point} */
 const localCenter = center;
 const axisAtOrigin = spatialLine({ direction: Z, origin });
 const negativeAxes = [negX, negY, negZ];
@@ -438,6 +469,8 @@ const movedOrigin = movedAxis.origin;
 const planeNormal = turnedPlane.normal;
 scene.add(movedSolid);
 
+const onYX = sketch(YX);
+const onXZ = sketch(XZ);
 const onXY = sketch({ plane: XY });
 const onZX = sketch({ plane: ZX });
 const onYZ = sketch({ plane: YZ });
@@ -490,7 +523,13 @@ const boundaries = partSolid.boundaries;`;
   try {
     const diagnostics = service.getSemanticDiagnostics("/model.js");
     assert.deepEqual(diagnostics.map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")), []);
-    const sketch = service.getQuickInfoAtPosition("/model.js", code.indexOf("Sketch") + 1);
+    const log = service.getQuickInfoAtPosition("/model.js", code.indexOf("log(") + 1);
+    assert.match(ts.displayPartsToString(log.documentation), /script console/);
+    assert.match(ts.displayPartsToString(log.displayParts), /value: number/);
+    const visualize = service.getQuickInfoAtPosition("/model.js", code.indexOf("visualize(") + 1);
+    assert.match(ts.displayPartsToString(visualize.documentation), /original geometry/);
+    assert.match(ts.displayPartsToString(visualize.displayParts), /Sketch/);
+    const sketch = service.getQuickInfoAtPosition("/model.js", code.indexOf("new Sketch") + 5);
     assert.match(ts.displayPartsToString(sketch.documentation), /Create an empty sketch/);
     const sketchClass = service.getQuickInfoAtPosition("/model.js", code.indexOf("Sketch;", code.indexOf("const SketchClass")) + 1);
     assert.match(ts.displayPartsToString(sketchClass.documentation), /Local 2D drawing geometry/);

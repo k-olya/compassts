@@ -75,6 +75,40 @@ scene.add(transform);
   }
 });
 
+test('overall STL export excludes whole annotated subtrees while preserving preview, occurrences and world-space order', () => {
+  const result = evaluateCode(`${triangleClass}
+const shared = new Triangle(5).annotate({ name: 'Shared', exclude: false });
+const excluded = annotatedNode({ name: 'Reference', exclude: true }).add(new Triangle(1), shared);
+const shifted = new Transform(); shifted.position.x = 10; shifted.add(excluded);
+scene.add(annotatedNode({ name: 'Assembly' }).add(new Triangle(), shared, shifted, new Triangle(2)));
+`);
+  assert.equal(result.positions.length / 9, 5);
+  const snapshot = result.positions.slice();
+  assert.deepEqual(result.meshes.map(mesh => [mesh.name, mesh.exclude]), [
+    ['Assembly', false], ['Shared', false], ['Reference', true], ['Shared', true],
+  ]);
+  const preview = createPreviewMeshes(result.meshes);
+  try {
+    assert.equal(preview.children.length, 4);
+    assert.ok(preview.children.every(mesh => mesh.visible));
+    assert.equal(preview.children[2].userData.part.exclude, true);
+    assert.equal(preview.children[3].geometry.attributes.position.array[0], 10);
+  } finally { disposePreviewMeshes(preview); }
+  const expected = new Float32Array([...result.positions.slice(0, 18), ...result.positions.slice(36)]);
+  const exported = new DataView(exportBinaryStl(result));
+  assert.equal(exported.getUint32(80, true), 3);
+  for (let triangle = 0; triangle < 3; triangle++) for (let coordinate = 0; coordinate < 9; coordinate++) {
+    assert.equal(exported.getFloat32(84 + triangle * 50 + 12 + coordinate * 4, true), expected[triangle * 9 + coordinate]);
+  }
+  const individual = new DataView(exportBinaryStl(result.meshes[2].positions));
+  assert.equal(individual.getUint32(80, true), 1);
+  assert.equal(individual.getFloat32(96, true), 10);
+  assert.deepEqual(result.positions, snapshot);
+  const empty = evaluateCode(`${triangleClass} scene.add(new Triangle().annotate({ exclude: true }));`);
+  assert.equal(empty.positions.length, 9);
+  assert.equal(new DataView(exportBinaryStl(empty)).getUint32(80, true), 0);
+});
+
 test('solid-owned triangles stay in the parent annotation and nested child geometry gets its own mesh', () => {
   const result = evaluateCode(`
 const parent = sketch().add(rectangle({ center, corner2: { x: 1, y: 1 } })).extrude({ length: 2 });

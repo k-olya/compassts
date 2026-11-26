@@ -180,8 +180,9 @@ export const useCadStore = create<CadState>((set, get) => ({
     }
   },
   exportStl: (mesh) => {
+    if (mesh?.primitive === "lines") return;
     try {
-      const data = exportBinaryStl(mesh?.positions ?? get().rendered.positions);
+      const data = exportBinaryStl(mesh?.positions ?? get().rendered);
       const url = URL.createObjectURL(new Blob([data], { type: "model/stl" }));
       const link = document.createElement("a");
       link.href = url;

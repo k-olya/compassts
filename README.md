@@ -76,7 +76,7 @@ Passing arrays directly avoids function argument limits when adding many objects
 
 The Helpers category inserts `spatialLine({ direction, origin })`, `plane({ a, b, c })`,
 `rotate({ object, axis, angle })`, `displace({ object, vector })`, and
-`annotate({ solid, name, color, alpha })` option templates.
+`annotate({ node, name, color, alpha, exclude })` option templates, plus `vi(geometry)`.
 SpatialLine is a vec3-compatible direction array with a copied origin (default
 zero); X/Y/Z are zero-origin unit lines. Extrusion uses the direction only.
 Rotate uses signed degrees around a spatial line, including its origin. Displace
@@ -85,7 +85,7 @@ spatial curves/lines, edges, solids, or surfaces, preserving their mathematical
 geometry and shared topology. Solid child geometry moves under new lazy transform
 nodes without changing source nodes or memo caches.
 
-Annotate wraps the original solid in a new `AnnotatedNode`, a `Memo` group with
+Annotate wraps the original node in a new `AnnotatedNode`, a `Memo` group with
 display properties. The method form is `part.annotate({ name, color, alpha })`.
 For general groups, use `new AnnotatedNode(options).add(...)` or
 `annotatedNode(options).add(...)`. Names default to `mesh1`, `mesh2`, ... via a
@@ -97,6 +97,31 @@ Explicit names leave the counter unchanged. Color defaults to `'default'`
 ```js
 scene.add(part.annotate({ name: 'Housing', color: '#5599dd', alpha: 0.6 }));
 scene.add(part.annotate({ color: 'blue' })); // Automatic name, opaque theme blue.
+```
+
+`annotate({ geometry, name?, color?, alpha? })` also accepts planes, sketches,
+planar entities (points, lines, segments and curves), spatial lines and curves,
+and nested arrays such as `rectangle(...)`. These render as Three.js line segments
+and contribute no triangles to STL. Sketches retain their placement planes;
+standalone planar entities use world XY. Curves respect their `.sample()` overrides.
+Infinite lines are shown with a 100-unit span; planes show 10-unit local axes
+from a shared origin: red X, green Y, blue normal. Line annotations support hover
+and context menus; STL export is disabled for them.
+
+The Helpers toolbar inserts `vi(value)`, a short alias for `visualize(value)`. Both names
+refer to the same helper. It adds automatic annotations to
+`scene` and returns the exact argument with its original type and identity, like
+`log(value)`. Lines use blue and solids use red with opacity `0.35`; planes use the
+axis colors above. Nested arrays are supported, including spatial lines (which
+are treated as geometry, rather than arrays of numbers). These inspection
+annotations are excluded from overall export. Use `scene.add(part)` separately
+when the part should be exported.
+
+```js
+const drawing = vi(sketch(ZX).add(circle(5)));
+const part = vi(drawing.extrude(10));
+vi(part.surfaces.find(surface => surface.plane)?.plane ?? XY);
+scene.add(part);
 ```
 
 The immutable `colors` palette contains 16 named constants: `default`, `red`,
@@ -124,7 +149,7 @@ world-space coordinates preserved. Nested annotated meshes remain separate.
 Unannotated geometry shares the default mesh and has no hover effect or context menu.
 Fully transparent meshes, edge overlays, and the grid are excluded from picking.
 Right-drag continues to pan. Escape, an outside click, navigation, or a new render
-closes the menu. The top Export STL button still exports the entire scene.
+closes the menu. The top Export STL button exports scene triangles except subtrees annotated with `exclude: true`.
 
 The same transformations are available as `.rotate({ axis, angle })` and
 `.displace({ vector })` on each supported class, including inherited surface types.
@@ -298,7 +323,7 @@ documentation links open the folder containing their target. Operations such as
 `functionalize` and the packed-coordinate `transformMat4`. Folder assignment
 follows libcompass's `src/operations/`, `src/defaults/`, and `src/util/` structure;
 internal geometry helpers are not part of the public docs. Defaults include
-origin planes `XY`, `ZX`, `YZ`, unit spatial lines `X`, `Y`, `Z` and their negative
+origin planes `XY`, `YX`, `XZ`, `ZX`, `YZ`, unit spatial lines `X`, `Y`, `Z` and their negative
 directions `negX`, `negY`, `negZ` (all with zero origins), `center` (the Point
 `{ x: 0, y: 0 }`), and `origin` (the vec3 `[0, 0, 0]`), available directly in scripts
 and Monaco tooltips. Plane letters give local axis order; the normals

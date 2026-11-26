@@ -362,7 +362,7 @@ test("mesh STL downloads use only the selected transformed mesh and a filename b
   const store = () => useCadStore.getState();
   store().setCode(`
 const part = sketch().add(rectangle({ center, corner2: { x: 1, y: 2 } })).extrude({ length: 3 });
-scene.add(part.displace({ vector: [10, 20, 30] }).annotate({ name: "Left:arm/part", color: "blue", alpha: 0.5 }));
+scene.add(part.displace({ vector: [10, 20, 30] }).annotate({ name: "Left:arm/part", color: "blue", alpha: 0.5, exclude: true }));
 scene.add(part.displace({ vector: [-10, 0, 0] }).annotate({ name: "Other", color: "red" }));
 `);
   await store().render();
@@ -370,7 +370,7 @@ scene.add(part.displace({ vector: [-10, 0, 0] }).annotate({ name: "Other", color
   store().exportStl(selected);
   store().exportStl();
   assert.deepEqual(downloads.map(file => file.name), ["Left_arm_part.stl", "compass.stl"]);
-  for (const [i, positions] of [selected.positions, rendered.positions].entries()) {
+  for (const [i, positions] of [selected.positions, rendered.meshes[1].positions].entries()) {
     const data = new DataView(await downloads[i].blob.arrayBuffer());
     assert.equal(data.getUint32(80, true), positions.length / 9);
     assert.equal(data.byteLength, 84 + positions.length / 9 * 50);
@@ -412,6 +412,21 @@ test("Zustand reports render errors, retains the last model, and recovers on suc
   assert.equal(useCadStore.getState().rendered.positions.length, 0);
   assert.deepEqual(useCadStore.getState().consoleEntries, []);
   assert.equal(useCadStore.getState().consoleOpen, false);
+});
+
+test("log writes once to the script console and returns the exact value", (t) => {
+  const logged = t.mock.method(console, "log", () => {});
+  const entries = [];
+  evaluateCode(`const object = { nested: [1, 2] };
+if (log(object) !== object) throw new Error("Object identity changed");
+for (const value of [undefined, null, false, 0, "", NaN]) {
+  if (!Object.is(log(value), value)) throw new Error("Value changed");
+}`, entry => entries.push(entry));
+  assert.equal(logged.mock.callCount(), 7);
+  assert.equal(entries.length, 7);
+  assert.ok(entries.every(entry => entry.level === "log"));
+  assert.equal(entries[0].parts.find(part => "value" in part).value, logged.mock.calls[0].arguments[0]);
+  assert.equal(entries[0].location.line, 2);
 });
 
 test("script console captures output, objects, assertions, and script-only stack frames", (t) => {

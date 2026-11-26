@@ -1,7 +1,7 @@
-import { EdgesGeometry, Group, LineBasicMaterial, LineSegments, Mesh, MeshStandardMaterial, type BufferGeometry, type Raycaster } from "three";
+import { EdgesGeometry, Group, LineBasicMaterial, LineSegments, Mesh, MeshStandardMaterial, BufferAttribute, BufferGeometry, type Raycaster } from "three";
 import { createGeometry, type RenderedMesh } from "./cad.ts";
 
-export type PreviewMesh = Mesh<BufferGeometry, MeshStandardMaterial>;
+export type PreviewMesh = Mesh<BufferGeometry, MeshStandardMaterial> | LineSegments<BufferGeometry, LineBasicMaterial>;
 const edgeColor = 0x362918;
 
 /** Build one named material-bearing mesh per annotation, plus unannotated geometry. */
@@ -9,6 +9,17 @@ export function createPreviewMeshes(parts: readonly RenderedMesh[]): Group {
   const group = new Group();
   try {
     for (const part of parts) {
+      if (part.primitive === "lines") {
+        const geometry = new BufferGeometry();
+        geometry.setAttribute("position", new BufferAttribute(part.positions, 3));
+        const lines = new LineSegments(geometry, new LineBasicMaterial({
+          color: part.color, opacity: part.alpha, transparent: part.alpha < 1, depthWrite: part.alpha === 1,
+        }));
+        lines.name = part.name;
+        lines.userData.part = part;
+        group.add(lines);
+        continue;
+      }
       const mesh = new Mesh(createGeometry(part.positions), new MeshStandardMaterial({
         color: part.color, opacity: part.alpha, transparent: part.alpha < 1, depthWrite: part.alpha === 1,
         roughness: 0.4, metalness: 0.15, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
@@ -33,7 +44,8 @@ export function pickPreviewMesh(model: Group, raycaster: Raycaster): PreviewMesh
   model.updateMatrixWorld(true);
   for (const hit of raycaster.intersectObjects(model.children, false)) {
     const mesh = hit.object;
-    if (mesh instanceof Mesh && mesh.visible && mesh.material instanceof MeshStandardMaterial && mesh.material.opacity > 0) {
+    if ((mesh instanceof Mesh || mesh instanceof LineSegments) && mesh.visible &&
+      (mesh.material instanceof MeshStandardMaterial || mesh.material instanceof LineBasicMaterial) && mesh.material.opacity > 0) {
       return mesh.userData.part.annotated ? mesh : undefined;
     }
   }
@@ -41,6 +53,10 @@ export function pickPreviewMesh(model: Group, raycaster: Raycaster): PreviewMesh
 
 /** Highlight the preview material without changing annotation color, opacity, or positions. */
 export function setPreviewMeshHovered(mesh: PreviewMesh, hovered: boolean): void {
+  if (mesh.material instanceof LineBasicMaterial) {
+    mesh.material.color.set(hovered ? "#f0c486" : mesh.userData.part.color);
+    return;
+  }
   mesh.material.emissive.setHex(hovered ? 0xe7b874 : 0);
   mesh.material.emissiveIntensity = hovered ? 0.2 : 1;
   for (const child of mesh.children) if (child instanceof LineSegments && child.material instanceof LineBasicMaterial) {

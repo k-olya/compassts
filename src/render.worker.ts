@@ -42,11 +42,12 @@ addEventListener('message', async ({ data }: MessageEvent<RenderRequest>) => {
       rendered.projectSource = projectSource(files);
     } else {
       const parameters = createParametricRuntime(controls, controls => send({ type: 'controls', controls }));
-      const bindings = scriptBindings(createScriptConsole(output, location => map(location)), parameters);
+      const scene = new Node();
+      const bindings = scriptBindings(createScriptConsole(output, location => map(location)), parameters, scene);
       const { rollup } = await import('@rollup/browser');
       const project = await bundleProject(files, bindings, file => send({ type: 'file', file }), rollup);
       map = project.location;
-      Object.assign(globalThis, bindings, { __compassBindings: bindings, scene: new Node(), console: createScriptConsole(output, location => map(location)) });
+      Object.assign(globalThis, bindings, { __compassBindings: bindings, scene, console: createScriptConsole(output, location => map(location)) });
       await import(/* @vite-ignore */ project.url);
       rendered = renderedScene((globalThis as unknown as { scene: Node }).scene, files.find(file => file.name === MAIN_FILE)!.source, parameters.controls);
       rendered.projectSource = projectSource(project.files);

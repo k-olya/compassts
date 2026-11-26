@@ -19,7 +19,7 @@ export async function bundleProject(files: readonly ScriptFile[], bindings: Reco
       async load(id) {
         if (id === 'libcompass' || id === 'gl-matrix') {
           const math = ['glMatrix','mat2','mat2d','mat3','mat4','quat','quat2','vec2','vec3','vec4'];
-          return Object.keys(bindings).filter(name => id === 'gl-matrix' ? math.includes(name) : !math.includes(name) && name !== 'parametric')
+          return Object.keys(bindings).filter(name => id === 'gl-matrix' ? math.includes(name) : !math.includes(name) && !['parametric', 'log', 'visualize', 'vi'].includes(name))
             .map(name => `export const ${name} = globalThis.__compassBindings[${JSON.stringify(name)}];`).join('\n');
         }
         let file = available.get(id);

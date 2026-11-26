@@ -228,7 +228,7 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       menuOpen.current = true;
       setMenu({ part: mesh.userData.part as RenderedMesh,
         x: Math.max(8, Math.min(clientX - rect.left, rect.width - 232)),
-        y: Math.max(8, Math.min(clientY - rect.top, rect.height - 96)),
+        y: Math.max(8, Math.min(clientY - rect.top, rect.height - (mesh.userData.part.exclude ? 124 : 96))),
       });
     };
     const pointerDown = (event: PointerEvent) => {
@@ -277,15 +277,16 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       disposePreviewMeshes(model);
       model = next;
       scene.add(model);
-      if (!rendered.positions.length) return;
-      const bounds = new THREE.Box3().setFromArray(rendered.positions);
+      const bounds = new THREE.Box3().setFromObject(model);
+      if (bounds.isEmpty()) return;
       const center = bounds.getCenter(new THREE.Vector3()), point = new THREE.Vector3();
       let radiusSquared = 0;
-      for (let i = 0; i < rendered.positions.length; i += 3) {
-        radiusSquared = Math.max(radiusSquared, point.fromArray(rendered.positions, i).distanceToSquared(center));
+      for (const part of rendered.meshes) for (let i = 0; i < part.positions.length; i += 3) {
+        radiusSquared = Math.max(radiusSquared, point.fromArray(part.positions, i).distanceToSquared(center));
       }
       const radius = Math.sqrt(radiusSquared);
       const size = Math.max(radius, 1);
+      raycaster.params.Line.threshold = size / 100;
       const halfFovRAD = THREE.MathUtils.degToRad(perspective.fov / 2);
       const distance = size / Math.sin(Math.atan(Math.tan(halfFovRAD) * Math.min(perspective.aspect, 1))) * 1.25;
       camera.near = size / 1000;
@@ -371,8 +372,10 @@ export default function Viewer({ orthographic }: { orthographic: boolean }) {
       <div className="mesh-context-name" title={menu.part.name || "Model"}>
         <span className="mesh-context-color" style={{ backgroundColor: menu.part.color }} aria-hidden="true" />
         <span className="mesh-context-label">{menu.part.name || "Model"}</span>
+        {menu.part.exclude && <span className="mesh-context-excluded">Excluded from overall export</span>}
       </div>
-      <button type="button" role="menuitem" aria-label="Export mesh as STL" onClick={() => {
+      <button type="button" role="menuitem" aria-label="Export mesh as STL" disabled={menu.part.primitive === "lines"}
+        title={menu.part.primitive === "lines" ? "STL export requires triangles" : undefined} onClick={() => {
         useCadStore.getState().exportStl(menu.part);
         closeMenu();
         container.current?.querySelector("canvas")?.focus({ preventScroll: true });

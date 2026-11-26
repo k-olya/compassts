@@ -60,7 +60,37 @@ export function readLibcompassApi() {
     if (path.endsWith(".d.ts")) libraries[`file:///node_modules/libcompass/${relative(outputRoot, path).replaceAll("\\", "/")}`] = content;
   });
   libraries["file:///parametric.d.ts"] = ts.transpileDeclaration(readFileSync(parameterSource, "utf8"), { fileName: parameterSource }).outputText;
-  const documentedExports = [...exports, ...parameterExports];
+  libraries["file:///app-helpers.d.ts"] = `
+/**
+ * Log a value to the script console and return it unchanged.
+ * @param value - Value to log; objects retain their identity.
+ * @returns The same value, preserving its type.
+ * @example
+ * const part = log(sketch().add(circle(2)).extrude(5));
+ */
+export declare function log<T>(value: T): T;
+/** Geometry accepted by the visualize script helper, including nested arrays. */
+export type Visualizable = import("libcompass").Node | import("libcompass").AnnotationGeometry | readonly Visualizable[];
+/**
+ * Add a preview annotation to scene and return the original geometry unchanged.
+ * Lines are blue, solids are translucent red, and plane X/Y/normal axes are red/green/blue.
+ * Inspection annotations are excluded from overall export. Planar entities use world XY;
+ * sketches retain their planes. Plane axes are 10 units; infinite lines span 100 units.
+ * @param value - Geometry or nested arrays to inspect; object and array identities are preserved.
+ * @returns The exact input, preserving its type for inline modeling expressions.
+ * @example
+ * const part = visualize(sketch().add(rectangle({ center, width: 20, height: 10 }))).extrude(5);
+ */
+export declare function visualize<T extends Visualizable>(value: T): T;
+/**
+ * Short alias for visualize(): add an inspection preview and return the exact input.
+ * @param value - Geometry or nested arrays to inspect.
+ * @returns The original value, preserving its type and identity.
+ * @see visualize
+ */
+export declare function vi<T extends Visualizable>(value: T): T;
+`;
+  const documentedExports = [...exports, ...parameterExports, "log", "visualize", "vi", "Visualizable"];
   const printer = ts.createPrinter({ removeComments: true });
   const entries = Object.entries(libraries).flatMap(([path, content]) => {
     const source = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true);
@@ -97,7 +127,7 @@ export function readLibcompassApi() {
         }];
       });
       const docs = documentation(node);
-      const folder = path === 'file:///parametric.d.ts' ? 'app' : ts.isFunctionDeclaration(node)
+      const folder = ['file:///parametric.d.ts', 'file:///app-helpers.d.ts'].includes(path) ? 'app' : ts.isFunctionDeclaration(node)
         ? docs.description.includes("Constructor shorthand for") ? "shorthands" : path.includes("/operations/") ? "operations" : "util"
         : "classes";
       return [{ name: node.name.text, folder, kind: ts.isClassDeclaration(node) ? "Class" : ts.isInterfaceDeclaration(node) ? "Interface" : ts.isFunctionDeclaration(node) ? "Function" : "Type", signature, ...docs, members }];
@@ -111,7 +141,12 @@ export function readLibcompassApi() {
 import * as compass from "libcompass";
 import * as matrix from "gl-matrix";
 import * as parameters from "./parametric";
+import * as helpers from "./app-helpers";
 declare global {
+  export import log = helpers.log;
+  export import visualize = helpers.visualize;
+  export import vi = helpers.vi;
+  export import Visualizable = helpers.Visualizable;
   ${parameterExports.map(name => `export import ${name} = parameters.${name};`).join("\n  ")}
   ${exports.map(name => `export import ${name} = compass.${name};`).join("\n  ")}
   ${["glMatrix", "mat2", "mat2d", "mat3", "mat4", "quat", "quat2", "vec2", "vec3", "vec4"].map(name => `export import ${name} = matrix.${name};`).join("\n  ")}
