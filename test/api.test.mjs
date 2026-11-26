@@ -252,7 +252,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(api.entries.find(entry => entry.name === "PI").kind, "Constant");
   assert.match(api.entries.find(entry => entry.name === "radtodeg").description, /radians to degrees/);
   assert.match(api.entries.find(entry => entry.name === "degtorad").description, /degrees to radians/);
-  for (const name of ["XY", "YX", "XZ", "ZX", "YZ", "X", "Y", "Z", "negX", "negY", "negZ", "center", "origin"]) {
+  for (const name of ["XY", "YX", "XZ", "ZX", "YZ", "ZY", "X", "Y", "Z", "negX", "negY", "negZ", "center", "origin"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.folder, "defaults");
     assert.equal(entry.kind, "Constant");
@@ -469,6 +469,7 @@ const movedOrigin = movedAxis.origin;
 const planeNormal = turnedPlane.normal;
 scene.add(movedSolid);
 
+const onZY = sketch(ZY);
 const onYX = sketch(YX);
 const onXZ = sketch(XZ);
 const onXY = sketch({ plane: XY });
