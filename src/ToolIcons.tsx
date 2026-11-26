@@ -147,6 +147,13 @@ export function RoundIcon() {
   </ToolIcon>;
 }
 
+export function UnionIcon() {
+  return <ToolIcon>
+    <path d="M3 4h12v4h6v12H9v-4H3Z" fill="currentColor" fillOpacity="0.2" />
+    <path d="M17 2v4m-2-2h4" strokeWidth="1.75" />
+  </ToolIcon>;
+}
+
 export function IntersectIcon() {
   return <ToolIcon>
     <path d="M3 4h12v12H3ZM9 8h12v12H9Z" opacity="0.45" />

@@ -9,7 +9,7 @@ import RenderStatus from './RenderStatus.tsx';
 import Console from "./Console.tsx";
 import Editor, { type EditorHandle } from "./Editor.tsx";
 import SideToolbar, { ToolbarSection } from "./SideToolbar.tsx";
-import { AnnotateIcon, MeasureIcon, ParametricIcon, DisplacementArrayIcon, RotationArrayIcon, CurveArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, ExtrudeRotateIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
+import { AnnotateIcon, MeasureIcon, ParametricIcon, DisplacementArrayIcon, RotationArrayIcon, CurveArrayIcon, DisplaceIcon, PlaneIcon, RotateIcon, SpatialLineIcon, ArcIcon, ArraysIcon, CircleIcon, EllipseIcon, SvgPathIcon, PolylineIcon, RoundPolylineIcon, RectangleIcon, HelpersIcon, SpatialCurveFromPlanarIcon, SpatialCurvesIcon, SpatialSurfacesIcon, ChamferIcon, RoundIcon, UnionIcon, DifferenceIcon, ExtrudeCutIcon, ExtrudeIcon, IntersectIcon, LineSegmentIcon, PlanarCurveIcon, PlanarToolsIcon, SketchIcon, SolidToolsIcon, SweepIcon, ExtrudeRotateIcon, TrimCurveIcon, TrimSurfaceIcon } from "./ToolIcons.tsx";
 import Viewer from "./Viewer.tsx";
 import { useCadStore } from "./store.ts";
 import type { ScriptLocation } from "./script-console.ts";
@@ -96,6 +96,10 @@ const toolSections = {
     {
       label: "Round", Icon: RoundIcon,
       snippet: "round({\n  solid: ${1:part},\n  radius: ${2:0.5},\n  boundaries: ${3:[]},\n})$0",
+    },
+    {
+      label: "Union", Icon: UnionIcon,
+      snippet: "union({\n  solid: ${1:part},\n  tool: ${2:other},\n})$0",
     },
     {
       label: "Intersect", Icon: IntersectIcon,

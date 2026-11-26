@@ -209,7 +209,7 @@ test("documentation folders distinguish constructors, shorthands, operations, de
   assert.equal(folder("TrimmedSurface"), "classes");
   assert.equal(folder("SurfaceRegion"), "classes");
   assert.equal(folder("surfaceRegion"), "shorthands");
-  for (const name of ["intersect", "difference", "extrudeCut"]) {
+  for (const name of ["intersect", "difference", "union", "extrudeCut"]) {
     const entry = api.entries.find(entry => entry.name === name);
     assert.equal(entry.folder, "operations");
     assert.ok(entry.members.some(member => member.name === "options.solid" && member.description));
@@ -285,6 +285,7 @@ const directRound = round(directPart);
 const directBoundaries = searchBoundaries(directPart);
 const directIntersection = directPart.intersect(directSolid);
 const directDifference = directPart.difference(directSolid);
+const directUnion = directPart.union(directSolid);
 const directDisplacement = directPart.displace([1, 2, 3]);
 const planeDisplacement = XY.displace(new Float32Array([1, 2, 3]));
 const directLift = SpatialCurve.fromPlanarCurve(directPlanar);
@@ -369,6 +370,8 @@ if (cap) {
 }
 const common = intersect({ solid: partSolid, tool: swept });
 const removed = difference({ solid: partSolid, tool: swept });
+const united = union({ solid: partSolid, tool: swept });
+const unitedMethod = partSolid.union({ tool: swept });
 const cutExtrusion = extrudeCut({ solid: partSolid, sketch: s, length: -3, axis: Z, angle: 2 });
 const commonMethod = partSolid.intersect({ tool: swept });
 const removedMethod = partSolid.difference({ tool: swept });
